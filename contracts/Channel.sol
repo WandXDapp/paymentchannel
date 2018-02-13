@@ -33,6 +33,11 @@ contract Channel {
         _;
     }
 
+    modifier onlySenderOrReceiver() {
+        require(msg.sender == sender || msg.sender == receiver);
+        _;
+    }
+
     modifier nonZero(uint param) {
         require(param > 0);
         _;
@@ -117,9 +122,8 @@ contract Channel {
     
     function mutualSettlement(uint _balance, bytes _signedBalanceMsg, bytes _signedClosingMsg)
     external
-    nonZero(_balance)
+    onlySenderOrReceiver nonZero(_balance)
     {
-        require(msg.sender == sender || msg.sender == receiver);
         require(_balance <= depositedBalance);
         
         // Derive sender address from signed balance proof
@@ -154,7 +158,7 @@ contract Channel {
         ChannelChallenged(msg.sender, receiver, _balance);
     }
     
-    function settle() 
+    function afterChallengeSettle() 
     external 
     onlySender
     {
@@ -163,6 +167,18 @@ contract Channel {
 
         settleChannel(msg.sender, receiver, balanceInChallenge);
     }    
+
+
+    function getChannelInfo() onlySenderOrReceiver external view returns (address, address, uint, uint, State, uint, uint){
+        return( sender,
+                receiver,
+                challengePeriod,
+                startDate,
+                status,
+                depositedBalance,
+                withdrawnBalance
+                );
+    }
     
     function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, bytes _signedBalanceMsg)
     internal view

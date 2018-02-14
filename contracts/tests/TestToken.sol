@@ -96,12 +96,14 @@ contract BasicToken is ERC20 {
 }
 
 contract TestToken is BasicToken {
-
-    using SafeMath for uint256;
-
     // token Variable declaration
     string public name = "Test Token";
     string public symbol = "TST";
     uint16 public decimals = 18;
     uint256 public totalSupply = 1000000 * 10 ** 18;
+
+    function TestToken() public {
+      balances[msg.sender] = totalSupply;
+    }
+    
 }

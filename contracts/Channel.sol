@@ -1,17 +1,17 @@
 pragma solidity ^0.4.18;
 
-import './lib/ecverification.sol';
+import './ECVerification.sol';
 import './lib/safeMath.sol';
-import './token/token.sol';
+import './token/Token.sol';
 
-contract Channel {
+contract Channel is ECVerification {
 
     using SafeMath for uint256;
 
     uint public challengePeriod;
     address public sender;
     address public receiver;
-    uint startDate;
+    uint public startDate;
     uint challengeStartTime;
 
     uint depositedBalance = 0;
@@ -19,7 +19,7 @@ contract Channel {
     uint balanceInChallenge = 0;
 
     enum State {Initiated, Recharged, InChallenge, Settled }
-    State status;
+    State public status;
 
     Token public token;
 

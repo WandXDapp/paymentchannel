@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-library ECVerification {
+contract ECVerification {
 
     function ecverify(bytes32 hash, bytes signature) internal pure returns (address signatureAddress) {
         require(signature.length == 65);

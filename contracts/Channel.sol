@@ -8,9 +8,10 @@ contract Channel is ECVerification {
 
     using SafeMath for uint256;
 
-    uint public challengePeriod;
+    address factory;
     address public sender;
     address public receiver;
+    uint public challengePeriod;
     uint public startDate;
     uint challengeStartTime;
 
@@ -19,110 +20,83 @@ contract Channel is ECVerification {
     uint balanceInChallenge = 0;
 
     enum State {Initiated, Recharged, InChallenge, Settled }
-    State public status;
+    State status;
 
     Token public token;
 
-    modifier onlySender() {
-        require(msg.sender == sender);
+    modifier onlyFactory() {
+        require(msg.sender == factory);
         _;
     }
 
-    modifier onlyReceiver() {
-        require(msg.sender == receiver);
+    modifier originReceiver() {
+        require(tx.origin == receiver);
         _;
     }
 
-    modifier onlySenderOrReceiver() {
-        require(msg.sender == sender || msg.sender == receiver);
+    modifier originSender() {
+        require(tx.origin == sender);
         _;
     }
 
-    modifier nonZero(uint param) {
-        require(param > 0);
+    modifier originSenderOrReceiver() {
+        require(tx.origin == sender || tx.origin == receiver);
         _;
     }
 
-    modifier nonZeroAddress(address addr) {
-        require(addr != address(0));
-        _;
-    }
-
-    event ChannelRecharged(
-        address indexed _senderAddress,
-        address indexed _receiverAddress,
-        uint _deposit);
-
-    event ChannelWithdraw(
-        address indexed _senderAddress,
-        address indexed _receiverAddress,
-        uint _withdrawnBalance);
-
-    event ChannelSettled(
-        address indexed _senderAddress,
-        address indexed _receiverAddress,
-        uint _balance,
-        uint _receiverTokens);
-
-    event ChannelChallenged(
-        address indexed _senderAddress,
-        address indexed _receiverAddress,
-        uint _balance);
-
-
-    function Channel(address _receiver, address _tokenAddress, uint _challengePeriod) 
-    public 
-    nonZeroAddress(_receiver) nonZero(_challengePeriod)
-    {
-        require(_tokenAddress != 0x0);
-        require(addressHasCode(_tokenAddress));
+    function Channel(address _receiver, address _sender, address _tokenAddress, uint _challengePeriod) 
+    public
+    {       
         token = Token(_tokenAddress);
         require(token.totalSupply() > 0);
-
-        challengePeriod = _challengePeriod;
-        sender = msg.sender;
         receiver = _receiver;
+        sender = _sender;        
+        challengePeriod = _challengePeriod;
         startDate = now;
         status = State.Initiated;
     }
 
     function recharge(uint _deposit) 
     external 
-    onlySender nonZero(_deposit) 
+    onlyFactory originSender 
+    returns (bool)
     {
-        require(token.allowance(msg.sender, address(this)) >= _deposit);
-        require(token.transferFrom(msg.sender, address(this), _deposit));
+        require(token.allowance(sender, address(this)) >= _deposit);
+        require(token.transferFrom(sender, address(this), _deposit));
         depositedBalance = _deposit;
         status = State.Recharged;
 
-        ChannelRecharged(msg.sender, receiver, depositedBalance);
+        return true;
     }
 
     function withdraw(uint _balance, bytes _signedBalanceMsg)
     external
-    onlyReceiver nonZero(_balance)
+    originReceiver onlyFactory
+    returns (bool)
     {
         require(status == State.Recharged);
         require(_balance >= depositedBalance.sub(withdrawnBalance));
                 
         // Derive sender address from signed balance proof
         address senderAddress = extractBalanceProofSignature(
-            msg.sender,
+            receiver,
             _balance,
             _signedBalanceMsg
         );
+        require(senderAddress == sender);
         // Update total withdrawn balance
         withdrawnBalance = withdrawnBalance.add(_balance);
 
         // Send the remaining balance to the receiver
-        require(token.transfer(msg.sender, _balance));
+        require(token.transfer(receiver, _balance));
 
-        ChannelWithdraw(senderAddress, msg.sender, _balance);
+        return true;
     }
     
     function mutualSettlement(uint _balance, bytes _signedBalanceMsg, bytes _signedClosingMsg)
     external
-    onlySenderOrReceiver nonZero(_balance)
+    originSenderOrReceiver onlyFactory
+    returns (bool)
     {
         require(_balance <= depositedBalance);
         
@@ -142,12 +116,14 @@ contract Channel is ECVerification {
         require(receiverAddr == receiver);
 
         // Both signatures have been verified and the channel can be settled.
-        settleChannel(sender, receiver, _balance);
+        require(settleChannel(sender, receiver, _balance));
+        return true;
     }
 
     function challengedSettlement(uint _balance)
     external
-    onlySender nonZero(_balance)
+    originSender onlyFactory
+    returns (bool)
     {
         require(status == State.Recharged);
         require(_balance <= depositedBalance);
@@ -155,21 +131,23 @@ contract Channel is ECVerification {
         challengeStartTime = now;
         status = State.InChallenge;
         balanceInChallenge = _balance;
-        ChannelChallenged(msg.sender, receiver, _balance);
+        return true;
     }
     
     function afterChallengeSettle() 
     external 
-    onlySender
+    originSender onlyFactory
+    returns (uint)
     {
         require(status == State.InChallenge); 
         require(now > challengeStartTime + challengePeriod * 1 seconds);  
 
-        settleChannel(msg.sender, receiver, balanceInChallenge);
+        require(settleChannel(sender, receiver, balanceInChallenge));
+        return balanceInChallenge;
     }    
 
 
-    function getChannelInfo() onlySenderOrReceiver external view returns (address, address, uint, uint, State, uint, uint){
+    function getChannelInfo() onlyFactory external view returns (address, address, uint, uint, State, uint, uint){
         return( sender,
                 receiver,
                 challengePeriod,
@@ -230,6 +208,7 @@ contract Channel is ECVerification {
 
     function settleChannel(address _senderAddress, address _receiverAddress, uint _balance)
     internal 
+    returns (bool)
     {
         // Send the unwithdrawn _balance to the receiver
         uint receiverRemainingTokens = _balance.sub(withdrawnBalance);
@@ -238,18 +217,7 @@ contract Channel is ECVerification {
 
         // Send remaining tokens back to sender
         require(token.transfer(_senderAddress, depositedBalance.sub(receiverRemainingTokens)));
-
-        ChannelSettled(_senderAddress, _receiverAddress, _balance, receiverRemainingTokens);
+        return true;
     }
-   
-    
-    function addressHasCode(address _contract) internal view returns (bool) {
-        uint size;
-        assembly {
-            size := extcodesize(_contract)
-        }
-        return size > 0;
-    }
-
 
 }

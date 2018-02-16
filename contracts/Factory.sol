@@ -4,7 +4,7 @@ import './Channel.sol';
 import './lib/safeMath.sol';
 
 contract Factory {
-    address owner;
+    address public owner;
     mapping(address => address[]) channelsAsSender;
     mapping(address => address[]) channelsAsReceiver;
 
@@ -117,11 +117,19 @@ contract Factory {
     function getInfo(address _channelAddress) 
     external view 
     isContractAddress(_channelAddress)
-    returns (address, address, uint, uint, Channel.State, uint, uint)
+    returns (address, address, address, uint, uint, Channel.State, uint, uint)
     {
         return Channel(_channelAddress).getChannelInfo();
     }
 
+    function getAllChannelsAsSender () external view returns (address[]) {
+        return channelsAsSender[msg.sender];
+    }
+
+    function getAllChannelsAsReceiver () external view returns (address[]) {
+        return channelsAsReceiver[msg.sender];
+    }
+    
     function addressHasCode(address _contract) internal view returns (bool) {
         uint size;
         assembly {

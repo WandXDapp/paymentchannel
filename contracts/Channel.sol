@@ -50,7 +50,8 @@ contract Channel is ECVerification {
         token = Token(_tokenAddress);
         require(token.totalSupply() > 0);
         receiver = _receiver;
-        sender = _sender;        
+        sender = _sender; 
+        factory = msg.sender;       
         challengePeriod = _challengePeriod;
         startDate = now;
         status = State.Initiated;
@@ -147,9 +148,10 @@ contract Channel is ECVerification {
     }    
 
 
-    function getChannelInfo() onlyFactory external view returns (address, address, uint, uint, State, uint, uint){
+    function getChannelInfo() onlyFactory external view returns (address, address, address, uint, uint, State, uint, uint){
         return( sender,
                 receiver,
+                token,
                 challengePeriod,
                 startDate,
                 status,

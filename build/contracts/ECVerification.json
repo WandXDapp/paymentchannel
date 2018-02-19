@@ -1,15 +1,15 @@
 {
   "contractName": "ECVerification",
   "abi": [],
-  "bytecode": "0x60606040523415600e57600080fd5b603580601b6000396000f3006060604052600080fd00a165627a7a723058206bcd071e8be739a28a0a3d6e5dffc9d86f04cf3a1c7b7479063a68845040c3170029",
-  "deployedBytecode": "0x6060604052600080fd00a165627a7a723058206bcd071e8be739a28a0a3d6e5dffc9d86f04cf3a1c7b7479063a68845040c3170029",
+  "bytecode": "0x60606040523415600e57600080fd5b603580601b6000396000f3006060604052600080fd00a165627a7a72305820c180ef8f1a9a447569d6358bfb91bcd44e9e1265937bb5309fe3181f0eb0aff20029",
+  "deployedBytecode": "0x6060604052600080fd00a165627a7a72305820c180ef8f1a9a447569d6358bfb91bcd44e9e1265937bb5309fe3181f0eb0aff20029",
   "sourceMap": "26:991:1:-;;;;;;;;;;;;;;;;;",
   "deployedSourceMap": "26:991:1:-;;;;;",
   "source": "pragma solidity ^0.4.18;\n\ncontract ECVerification {\n\n    function ecverify(bytes32 hash, bytes signature) internal pure returns (address signatureAddress) {\n        require(signature.length == 65);\n\n        bytes32 r;\n        bytes32 s;\n        uint8 v;\n\n        // The signature format is a compact form of:\n        //   {bytes32 r}{bytes32 s}{uint8 v}\n        // Compact means, uint8 is not padded to 32 bytes.\n        assembly {\n            r := mload(add(signature, 32))\n            s := mload(add(signature, 64))\n\n            // Here we are loading the last 32 bytes, including 31 bytes of 's'.\n            v := byte(0, mload(add(signature, 96)))\n        }\n\n        // Version of signature should be 27 or 28, but 0 and 1 are also possible\n        if (v < 27) {\n            v += 27;\n        }\n\n        require(v == 27 || v == 28);\n\n        signatureAddress = ecrecover(hash, v, r, s);\n\n        // ecrecover returns zero on error\n        require(signatureAddress != 0x0);\n\n        return signatureAddress;\n    }\n}",
-  "sourcePath": "/home/aniket/projects/paymentchannel/contracts/ECVerification.sol",
+  "sourcePath": "/home/aniket/projects/wandx/paymentchannel/contracts/ECVerification.sol",
   "ast": {
     "attributes": {
-      "absolutePath": "/home/aniket/projects/paymentchannel/contracts/ECVerification.sol",
+      "absolutePath": "/home/aniket/projects/wandx/paymentchannel/contracts/ECVerification.sol",
       "exportedSymbols": {
         "ECVerification": [
           604
@@ -393,15 +393,6 @@
                     "attributes": {
                       "externalReferences": [
                         {
-                          "signature": {
-                            "declaration": 544,
-                            "isOffset": false,
-                            "isSlot": false,
-                            "src": "459:9:1",
-                            "valueSize": 1
-                          }
-                        },
-                        {
                           "r": {
                             "declaration": 557,
                             "isOffset": false,
@@ -415,7 +406,7 @@
                             "declaration": 544,
                             "isOffset": false,
                             "isSlot": false,
-                            "src": "502:9:1",
+                            "src": "459:9:1",
                             "valueSize": 1
                           }
                         },
@@ -433,7 +424,7 @@
                             "declaration": 544,
                             "isOffset": false,
                             "isSlot": false,
-                            "src": "635:9:1",
+                            "src": "502:9:1",
                             "valueSize": 1
                           }
                         },
@@ -443,6 +434,15 @@
                             "isOffset": false,
                             "isSlot": false,
                             "src": "612:1:1",
+                            "valueSize": 1
+                          }
+                        },
+                        {
+                          "signature": {
+                            "declaration": 544,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "635:9:1",
                             "valueSize": 1
                           }
                         }
@@ -1035,5 +1035,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-02-16T20:58:18.437Z"
+  "updatedAt": "2018-02-19T19:25:02.637Z"
 }

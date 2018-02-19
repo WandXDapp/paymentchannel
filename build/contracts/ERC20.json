@@ -180,10 +180,10 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity ^0.4.18;\n\nimport '../lib/safeMath.sol';\n\ncontract ERC20 {\n  uint256 public totalSupply;\n  function balanceOf(address who) public view returns (uint256);\n  function transfer(address to, uint256 value) public returns (bool);\n  event Transfer(address indexed from, address indexed to, uint256 value);\n  function allowance(address owner, address spender) public view returns (uint256);\n  function transferFrom(address from, address to, uint256 value) public returns (bool);\n  function approve(address spender, uint256 value) public returns (bool);\n  event Approval(address indexed owner, address indexed spender, uint256 value);\n    \n}\n\ncontract BasicToken is ERC20 {\n    using SafeMath for uint256;\n\n    mapping(address => uint256) balances;\n    mapping (address => mapping (address => uint256)) allowed;\n\n    /**\n  * @dev transfer token for a specified address\n  * @param _to The address to transfer to.\n  * @param _value The amount to be transferred.\n  */\n\n    function transfer(address _to, uint256 _value) public returns (bool) {\n        if (balances[msg.sender] >= _value && balances[_to] + _value > balances[_to]) {\n            balances[msg.sender] = balances[msg.sender].sub(_value);\n            balances[_to] = balances[_to].add(_value);\n            Transfer(msg.sender, _to, _value);\n            return true;\n        }else {\n            return false;\n        }\n    }\n    \n\n    /**\n   * @dev Transfer tokens from one address to another\n   * @param _from address The address which you want to send tokens from\n   * @param _to address The address which you want to transfer to\n   * @param _value uint256 the amout of tokens to be transfered\n   */\n\n    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {\n      if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to] + _value > balances[_to]) {\n        uint256 _allowance = allowed[_from][msg.sender];\n        allowed[_from][msg.sender] = _allowance.sub(_value);\n        balances[_to] = balances[_to].add(_value);\n        balances[_from] = balances[_from].sub(_value);\n        Transfer(_from, _to, _value);\n        return true;\n      } else {\n        return false;\n      }\n}\n\n\n    /**\n  * @dev Gets the balance of the specified address.\n  * @param _owner The address to query the the balance of. \n  * @return An uint256 representing the amount owned by the passed address.\n  */\n\n    function balanceOf(address _owner) public view returns (uint256 balance) {\n    return balances[_owner];\n  }\n\n  function approve(address _spender, uint256 _value) public returns (bool) {\n\n    // To change the approve amount you first have to reduce the addresses`\n    //  allowance to zero by calling `approve(_spender, 0)` if it is not\n    //  already 0 to mitigate the race condition described here:\n    //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\n    require((_value == 0) || (allowed[msg.sender][_spender] == 0));\n\n    allowed[msg.sender][_spender] = _value;\n    Approval(msg.sender, _spender, _value);\n    return true;\n  }\n\n  /**\n   * @dev Function to check the amount of tokens that an owner allowed to a spender.\n   * @param _owner address The address which owns the funds.\n   * @param _spender address The address which will spend the funds.\n   * @return A uint256 specifing the amount of tokens still avaible for the spender.\n   */\n  function allowance(address _owner, address _spender) public view returns (uint256 remaining) {\n    return allowed[_owner][_spender];\n  }\n\n\n}\n\ncontract TestToken is BasicToken {\n    // token Variable declaration\n    string public name = \"Test Token\";\n    string public symbol = \"TST\";\n    uint16 public decimals = 18;\n    uint256 public totalSupply = 1000000 * 10 ** 18;\n\n    function TestToken() public {\n      balances[msg.sender] = totalSupply;\n    }\n    \n}",
-  "sourcePath": "/home/aniket/projects/paymentchannel/contracts/tests/TestToken.sol",
+  "sourcePath": "/home/aniket/projects/wandx/paymentchannel/contracts/tests/TestToken.sol",
   "ast": {
     "attributes": {
-      "absolutePath": "/home/aniket/projects/paymentchannel/contracts/tests/TestToken.sol",
+      "absolutePath": "/home/aniket/projects/wandx/paymentchannel/contracts/tests/TestToken.sol",
       "exportedSymbols": {
         "BasicToken": [
           1470
@@ -213,7 +213,7 @@
       {
         "attributes": {
           "SourceUnit": 1159,
-          "absolutePath": "/home/aniket/projects/paymentchannel/contracts/lib/safeMath.sol",
+          "absolutePath": "/home/aniket/projects/wandx/paymentchannel/contracts/lib/safeMath.sol",
           "file": "../lib/safeMath.sol",
           "scope": 1501,
           "symbolAliases": [
@@ -4940,5 +4940,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-02-16T20:58:18.443Z"
+  "updatedAt": "2018-02-19T19:25:02.648Z"
 }

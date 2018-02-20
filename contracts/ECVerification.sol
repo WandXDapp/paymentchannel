@@ -2,7 +2,7 @@ pragma solidity ^0.4.18;
 
 contract ECVerification {
 
-    function ecverify(bytes32 hash, bytes signature) internal pure returns (address signatureAddress) {
+    function ecverify(bytes32 hash, bytes signature) public pure returns (address signatureAddress) {
         require(signature.length == 65);
 
         bytes32 r;
@@ -26,6 +26,11 @@ contract ECVerification {
         }
 
         require(v == 27 || v == 28);
+        /* 
+        * https://github.com/ethereum/go-ethereum/issues/3731
+        */
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        hash = keccak256(prefix, hash);
 
         signatureAddress = ecrecover(hash, v, r, s);
 

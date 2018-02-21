@@ -76,7 +76,7 @@ contract Channel is ECVerification {
     returns (bool)
     {
         require(status == State.Recharged);
-        require(_balance >= depositedBalance.sub(withdrawnBalance));
+        require(_balance <= depositedBalance.sub(withdrawnBalance));
                 
         // Derive sender address from signed balance proof
         address senderAddress = extractBalanceProofSignature(
@@ -161,7 +161,7 @@ contract Channel is ECVerification {
     }
     
     function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, bytes _signedBalanceMsg)
-    internal view
+    public view
     returns (address)
     {
         bytes32 msgHash = keccak256(
@@ -180,7 +180,7 @@ contract Channel is ECVerification {
         );
 
         // Derive address from signature
-        address signer = ECVerification.ecverify(msgHash, _signedBalanceMsg);
+        address signer = this.ecverify(msgHash, _signedBalanceMsg);
         return signer;
     }
 
@@ -204,7 +204,7 @@ contract Channel is ECVerification {
         );
 
         // Derive address from signature
-        address signer = ECVerification.ecverify(msgHash, _signedClosingMsg);
+        address signer = this.ecverify(msgHash, _signedClosingMsg);
         return signer;
     } 
 

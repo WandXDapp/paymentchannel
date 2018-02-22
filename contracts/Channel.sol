@@ -1,10 +1,9 @@
 pragma solidity ^0.4.18;
 
-import './ECVerification.sol';
 import './lib/safeMath.sol';
 import './token/Token.sol';
 
-contract Channel is ECVerification {
+contract Channel {
 
     using SafeMath for uint256;
 
@@ -70,7 +69,7 @@ contract Channel is ECVerification {
         return true;
     }
 
-    function withdraw(uint _balance, bytes _signedBalanceMsg)
+    function withdraw(uint _balance, uint8 _v, bytes32 _r, bytes32 _s)
     external
     originReceiver onlyFactory
     returns (bool)
@@ -79,12 +78,14 @@ contract Channel is ECVerification {
         require(_balance <= depositedBalance.sub(withdrawnBalance));
                 
         // Derive sender address from signed balance proof
-        address senderAddress = extractBalanceProofSignature(
+         
+        require(extractBalanceProofSignature(
             receiver,
             _balance,
-            _signedBalanceMsg
-        );
-        require(senderAddress == sender);
+            _v,
+            _r,
+            _s
+        ));
         // Update total withdrawn balance
         withdrawnBalance = withdrawnBalance.add(_balance);
 
@@ -94,32 +95,34 @@ contract Channel is ECVerification {
         return true;
     }
     
-    function mutualSettlement(uint _balance, bytes _signedBalanceMsg, bytes _signedClosingMsg)
-    external
-    originSenderOrReceiver onlyFactory
-    returns (bool)
-    {
-        require(_balance <= depositedBalance);
+    // function mutualSettlement(uint _balance, bytes _signedClosingMsg, uint8 _v, bytes32 _r, bytes32 _s)
+    // external
+    // originSenderOrReceiver onlyFactory
+    // returns (bool)
+    // {
+    //     require(_balance <= depositedBalance);
         
-        // Derive sender address from signed balance proof
-        address senderAddr = extractBalanceProofSignature(
-            receiver,
-            _balance,
-            _signedBalanceMsg
-        );
+    //     // Derive sender address from signed balance proof
+    //     address senderAddr = extractBalanceProofSignature(
+    //         receiver,
+    //         _balance,
+    //         _v,
+    //         _r,
+    //         _s
+    //     );
 
-        // Derive receiver address from closing signature
-        address receiverAddr = extractClosingSignature(
-            senderAddr,
-            _balance,
-            _signedClosingMsg
-        );
-        require(receiverAddr == receiver);
+    //     // Derive receiver address from closing signature
+    //     address receiverAddr = extractClosingSignature(
+    //         senderAddr,
+    //         _balance,
+    //         _signedClosingMsg
+    //     );
+    //     require(receiverAddr == receiver);
 
-        // Both signatures have been verified and the channel can be settled.
-        require(settleChannel(sender, receiver, _balance));
-        return true;
-    }
+    //     // Both signatures have been verified and the channel can be settled.
+    //     require(settleChannel(sender, receiver, _balance));
+    //     return true;
+    // }
 
     function challengedSettlement(uint _balance)
     external
@@ -148,7 +151,7 @@ contract Channel is ECVerification {
     }    
 
 
-    function getChannelInfo() onlyFactory external view returns (address, address, address, uint, uint, State, uint, uint){
+    function getChannelInfo() onlyFactory external view returns (address, address, address, uint, uint, State, uint, uint) {
         return( sender,
                 receiver,
                 token,
@@ -160,31 +163,18 @@ contract Channel is ECVerification {
                 );
     }
     
-    function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, bytes _signedBalanceMsg)
+    function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, uint8 _v, bytes32 _r, bytes32 _s)
     public view
-    returns (address)
+    returns (bool)
     {
-        bytes32 msgHash = keccak256(
-            keccak256(
-                "string msgId",
-                "address receiver",
-                "uint balance",
-                "address contract"
-            ),
-            keccak256(
-                "Sender Balance Proof Sign",
-                _receiverAddress,
-                _balance,   
-                address(this)
-            )
-        );
+        bytes32 hash = keccak256(_receiverAddress, _balance, address(this));
 
         // Derive address from signature
-        address signer = this.ecverify(msgHash, _signedBalanceMsg);
-        return signer;
+        require(ecrecover(keccak256("\x19Ethereum Signed Message:\n32", hash), _v, _r, _s) == sender);
+        return true;
     }
 
-    function extractClosingSignature(address _senderAddress, uint _balance, bytes _signedClosingMsg)
+    function extractClosingSignature(address _senderAddress, uint _balance, uint8 _v, bytes32 _r, bytes32 _s)
     internal view
     returns (address)
     {
@@ -204,7 +194,7 @@ contract Channel is ECVerification {
         );
 
         // Derive address from signature
-        address signer = this.ecverify(msgHash, _signedClosingMsg);
+        address signer = ecrecover(keccak256("\x19Ethereum Signed Message:\n32",msgHash), _v, _r, _s);
         return signer;
     } 
 

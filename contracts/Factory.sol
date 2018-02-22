@@ -74,25 +74,25 @@ contract Factory {
         ChannelRecharged(msg.sender, _deposit);
     }
 
-    function withdrawFromChannel(address _channelAddress, uint _balance, bytes _balanceMsg) 
+    function withdrawFromChannel(address _channelAddress, uint _balance, uint8 _v, bytes32 _r, bytes32 _s) 
     external
     isContractAddress(_channelAddress) nonZero(_balance) 
     {
         channel = Channel(_channelAddress);
-        require(channel.withdraw(_balance, _balanceMsg));
+        require(channel.withdraw(_balance, _v, _r, _s));
 
         ChannelWithdraw(msg.sender, _balance);
     }
 
-    function channelMutualSettlement(address _channelAddress, uint _balance, bytes _balanceMsg, bytes _closingMsg) 
-    external
-    isContractAddress(_channelAddress) nonZero(_balance) 
-    {
-        channel = Channel(_channelAddress);
-        require(channel.mutualSettlement(_balance, _balanceMsg, _closingMsg));
+    // function channelMutualSettlement(address _channelAddress, uint _balance, bytes _balanceMsg, bytes _closingMsg) 
+    // external
+    // isContractAddress(_channelAddress) nonZero(_balance) 
+    // {
+    //     channel = Channel(_channelAddress);
+    //     require(channel.mutualSettlement(_balance, _balanceMsg, _closingMsg));
 
-        ChannelSettled(msg.sender, _balance);
-    }
+    //     ChannelSettled(msg.sender, _balance);
+    // }
 
     function channelChallengedSettlement(address _channelAddress, uint _balance) 
     external

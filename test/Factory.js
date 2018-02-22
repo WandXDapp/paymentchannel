@@ -1,8 +1,11 @@
 const ECV = artifacts.require('ECVerification.sol');
 const Factory = artifacts.require('Factory.sol');
 const TestToken = artifacts.require('TestToken.sol');
+const ethers = require('ethers');
+const utils = ethers.utils;
 const Utils = require('./helpers/utils');
 import latestTime from './helpers/latestTime';
+import leftPad from 'left-pad';
 const BigNumber = require('bignumber.js');
 
 
@@ -19,6 +22,11 @@ contract('Factory', (accounts) => {
         testAddress2 = accounts[3];
     });
 
+    Number.prototype.pad = function(size) {
+        var s = String(this);
+        while (s.length < (size || 2)) {s = "0" + s;}
+        return s;
+      }
     it("Verify constructors", async()=>{
         let factory = await Factory.new();
 
@@ -154,25 +162,27 @@ contract('Factory', (accounts) => {
 
     it("withdrawFromChannel : Approved tokens will be transferred to channel", async()=>{
         let Token = await TestToken.new();
-        let challengePeriod = 500;
+        let challengePeriod = 400;
         let factory = await Factory.new();
         let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
         let channelAddress = channel.logs[0].args._channelAddress;
+        let channelDetails = await factory.getInfo(channelAddress);
+        
         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
         await factory.rechargeChannel(channelAddress, 500); 
-        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 500);
-        let msg = (
-            "string msgId",
-            "address receiver",
-            "uint balance",
-            "address contract"
-        );
-        let hash = web3.sha3(msg, web3.sha3(("Sender Balance Proof Sign", receiver, 100, channelAddress )));
+        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 500);    
+
+        let hash = web3.sha3(
+                web3.toHex("Sender Balance Proof Sign") +
+                receiver.slice(2) +
+                leftPad((100).toString(16), 64, 0) +
+                channelAddress.slice(2),
+                {encoding: 'hex'});
+
         let sig = web3.eth.sign(accounts[0], hash);
         await factory.withdrawFromChannel(channelAddress, 100, sig, {from: receiver});
-        // let channelDetails = await factory.getInfo(channelAddress);        
-
-        // assert.strictEqual(new BigNumber(channelDetails[5]).toNumber(), 1); //status : 1 = Recharged
+        let channelDetails2 = await factory.getInfo(channelAddress);      
+        assert.strictEqual(new BigNumber(await Token.balanceOf(receiver)).toNumber(), 100); 
     });
 
 });

@@ -15,9 +15,7 @@ contract ECVerification {
         assembly {
             r := mload(add(signature, 32))
             s := mload(add(signature, 64))
-
-            // Here we are loading the last 32 bytes, including 31 bytes of 's'.
-            v := byte(0, mload(add(signature, 96)))
+            v := and(mload(add(signature, 65)), 255)
         }
 
         // Version of signature should be 27 or 28, but 0 and 1 are also possible
@@ -31,7 +29,6 @@ contract ECVerification {
         */
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         hash = keccak256(prefix, hash);
-
         signatureAddress = ecrecover(hash, v, r, s);
 
         // ecrecover returns zero on error

@@ -1,8 +1,9 @@
 pragma solidity ^0.4.18;
 
-import './ECVerification.sol';
+
 import './lib/safeMath.sol';
 import './token/Token.sol';
+import './ECVerification.sol';
 
 contract Channel is ECVerification {
 
@@ -91,6 +92,8 @@ contract Channel is ECVerification {
         // Send the remaining balance to the receiver
         require(token.transfer(receiver, _balance));
 
+
+
         return true;
     }
     
@@ -165,22 +168,14 @@ contract Channel is ECVerification {
     returns (address)
     {
         bytes32 msgHash = keccak256(
-            keccak256(
-                "string msgId",
-                "address receiver",
-                "uint balance",
-                "address contract"
-            ),
-            keccak256(
                 "Sender Balance Proof Sign",
                 _receiverAddress,
-                _balance,   
-                address(this)
-            )
-        );
+                _balance,
+                 address(this)   
+            );
 
         // Derive address from signature
-        address signer = this.ecverify(msgHash, _signedBalanceMsg);
+        address signer = ecverify(msgHash, _signedBalanceMsg);
         return signer;
     }
 
@@ -189,22 +184,14 @@ contract Channel is ECVerification {
     returns (address)
     {
         bytes32 msgHash = keccak256(
-            keccak256(
-                "string msgId",
-                "address sender",
-                "uint balance",
-                "address contract"
-            ),
-            keccak256(
                 "Receiver Closing Sign",
                 _senderAddress,
                 _balance,
                 address(this)
-            )
-        );
+            );
 
         // Derive address from signature
-        address signer = this.ecverify(msgHash, _signedClosingMsg);
+        address signer = ecverify(msgHash, _signedClosingMsg);
         return signer;
     } 
 

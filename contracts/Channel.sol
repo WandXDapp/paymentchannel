@@ -52,7 +52,8 @@ contract Channel is ECVerification {
         require(token.totalSupply() > 0);
         receiver = _receiver;
         sender = _sender; 
-        factory = msg.sender;       
+        factory = msg.sender; 
+        require(addressHasCode(factory));      
         challengePeriod = _challengePeriod;
         startDate = now;
         status = State.Initiated;
@@ -207,6 +208,14 @@ contract Channel is ECVerification {
         // Send remaining tokens back to sender
         require(token.transfer(_senderAddress, depositedBalance.sub(receiverRemainingTokens)));
         return true;
+    }
+
+    function addressHasCode(address _contract) internal view returns (bool) {
+        uint size;
+        assembly {
+            size := extcodesize(_contract)
+        }
+        return size > 0;
     }
 
 }

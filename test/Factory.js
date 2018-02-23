@@ -164,9 +164,8 @@ contract('Factory', (accounts) => {
         let Token = await TestToken.new();
         let challengePeriod = 400;
         let factory = await Factory.new();
-        let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
+        let channel = await factory.createChannel(receiver, Token.address, challengePeriod); //sender = accounts[0]
         let channelAddress = channel.logs[0].args._channelAddress;
-        let channelDetails = await factory.getInfo(channelAddress);
         
         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
         await factory.rechargeChannel(channelAddress, 500); 
@@ -183,6 +182,162 @@ contract('Factory', (accounts) => {
         await factory.withdrawFromChannel(channelAddress, 100, sig, {from: receiver});
         let channelDetails2 = await factory.getInfo(channelAddress);      
         assert.strictEqual(new BigNumber(await Token.balanceOf(receiver)).toNumber(), 100); 
+    });
+
+    it("withdrawFromChannel : with non-contract channel address (should fail)", async()=>{
+        let Token = await TestToken.new();
+        let challengePeriod = 1000;
+        let factory = await Factory.new();
+        let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
+        let channelAddress = channel.logs[0].args._channelAddress;
+        await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
+        await factory.rechargeChannel(channelAddress, 500); 
+        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 500);    
+
+        let hash = web3.sha3(
+                web3.toHex("Sender Balance Proof Sign") +
+                receiver.slice(2) +
+                leftPad((100).toString(16), 64, 0) +
+                channelAddress.slice(2),
+                {encoding: 'hex'});
+
+        let sig = web3.eth.sign(accounts[0], hash);
+        try{
+            await factory.withdrawFromChannel(testAddress1, 100, sig, {from: receiver});      
+        }catch(error){
+            //console.log(error);
+            Utils.ensureException(error);
+        }
+    });
+
+    it("withdrawFromChannel : with zero deposit (should fail)", async()=>{
+        let Token = await TestToken.new();
+        let challengePeriod = 1000;
+        let factory = await Factory.new();
+        let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
+        let channelAddress = channel.logs[0].args._channelAddress;
+        await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
+        await factory.rechargeChannel(channelAddress, 500); 
+        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 500);    
+
+        let hash = web3.sha3(
+                web3.toHex("Sender Balance Proof Sign") +
+                receiver.slice(2) +
+                leftPad((0).toString(16), 64, 0) +
+                channelAddress.slice(2),
+                {encoding: 'hex'});
+
+        let sig = web3.eth.sign(accounts[0], hash);
+        try{
+            await factory.withdrawFromChannel(channelAddress, 0, sig, {from: receiver});      
+        }catch(error){
+            //console.log(error);
+            Utils.ensureException(error);
+        }
+    });
+
+    it("withdrawFromChannel : with a non-receiver address (should fail)", async()=>{
+        let Token = await TestToken.new();
+        let challengePeriod = 1000;
+        let factory = await Factory.new();
+        let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
+        let channelAddress = channel.logs[0].args._channelAddress;
+        await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
+        await factory.rechargeChannel(channelAddress, 500); 
+        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 500);    
+
+        let hash = web3.sha3(
+                web3.toHex("Sender Balance Proof Sign") +
+                receiver.slice(2) +
+                leftPad((100).toString(16), 64, 0) +
+                channelAddress.slice(2),
+                {encoding: 'hex'});
+
+        let sig = web3.eth.sign(accounts[0], hash);
+        try{
+            await factory.withdrawFromChannel(channelAddress, 100, sig, {from: testAddress1});      
+        }catch(error){
+            //console.log(error);
+            Utils.ensureException(error);
+        }
+    });
+
+    it("withdrawFromChannel : without recharging the channel (should fail)", async()=>{
+        let Token = await TestToken.new();
+        let challengePeriod = 1000;
+        let factory = await Factory.new();
+        let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
+        let channelAddress = channel.logs[0].args._channelAddress;
+        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 0);    
+
+        let hash = web3.sha3(
+                web3.toHex("Sender Balance Proof Sign") +
+                receiver.slice(2) +
+                leftPad((100).toString(16), 64, 0) +
+                channelAddress.slice(2),
+                {encoding: 'hex'});
+
+        let sig = web3.eth.sign(accounts[0], hash);
+        try{
+            await factory.withdrawFromChannel(channelAddress, 100, sig, {from: receiver});      
+        }catch(error){
+            //console.log(error);
+            Utils.ensureException(error);
+        }
+    });
+
+
+    it("withdrawFromChannel : withdraw more than deposit(should fail)", async()=>{
+        let Token = await TestToken.new();
+        let challengePeriod = 1000;
+        let factory = await Factory.new();
+        let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
+        let channelAddress = channel.logs[0].args._channelAddress;
+        await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
+        await factory.rechargeChannel(channelAddress, 100); 
+        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 100);    
+
+        let hash = web3.sha3(
+                web3.toHex("Sender Balance Proof Sign") +
+                receiver.slice(2) +
+                leftPad((200).toString(16), 64, 0) +
+                channelAddress.slice(2),
+                {encoding: 'hex'});
+
+        let sig = web3.eth.sign(accounts[0], hash);
+        try{
+            await factory.withdrawFromChannel(channelAddress, 200, sig, {from: receiver});      
+        }catch(error){
+            //console.log(error);
+            Utils.ensureException(error);
+        }
+    });
+
+
+    it("withdrawFromChannel : signature signed with non-sender address (should fail)", async()=>{
+        let Token = await TestToken.new();
+        let challengePeriod = 1000;
+        let factory = await Factory.new();
+        let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
+        let channelAddress = channel.logs[0].args._channelAddress;
+        await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
+        await factory.rechargeChannel(channelAddress, 500); 
+        assert.strictEqual(new BigNumber(await Token.balanceOf(channelAddress)).toNumber(), 500);    
+
+        let hash = web3.sha3(
+                web3.toHex("Sender Balance Proof Sign") +
+                receiver.slice(2) +
+                leftPad((200).toString(16), 64, 0) +
+                channelAddress.slice(2),
+                {encoding: 'hex'});
+
+        let sig = web3.eth.sign(accounts[2], hash); // signed with accounts[2], while sender is accounts[0]
+        try{
+            await factory.withdrawFromChannel(channelAddress, 100, sig, {from: receiver});      
+        }catch(error){
+            //console.log(error);
+            Utils.ensureException(error);
+        }
     });
 
 });

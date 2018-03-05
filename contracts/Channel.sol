@@ -92,9 +92,6 @@ contract Channel is ECVerification {
 
         // Send the remaining balance to the receiver
         require(token.transfer(receiver, _balance));
-
-
-
         return true;
     }
     
@@ -103,7 +100,8 @@ contract Channel is ECVerification {
     originSenderOrReceiver onlyFactory
     returns (bool)
     {
-        require(_balance <= depositedBalance);
+        require(status == State.Recharged || status == State.InChallenge);
+        require(_balance <= depositedBalance.sub(withdrawnBalance));
         
         // Derive sender address from signed balance proof
         address senderAddr = extractBalanceProofSignature(
@@ -111,7 +109,7 @@ contract Channel is ECVerification {
             _balance,
             _signedBalanceMsg
         );
-
+        require(senderAddr == sender);
         // Derive receiver address from closing signature
         address receiverAddr = extractClosingSignature(
             senderAddr,
@@ -163,16 +161,24 @@ contract Channel is ECVerification {
                 withdrawnBalance
                 );
     }
+
+    function getChallengeInfo() onlyFactory external view returns (uint, uint, uint) {
+        require(status == State.InChallenge);
+        return( challengeStartTime,
+                challengePeriod,
+                balanceInChallenge
+                );
+    }
     
     function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, bytes _signedBalanceMsg)
-    public view
+    internal view
     returns (address)
     {
         bytes32 msgHash = keccak256(
                 "Sender Balance Proof Sign",
                 _receiverAddress,
                 _balance,
-                 address(this)   
+                address(this)   
             );
 
         // Derive address from signature
@@ -202,6 +208,7 @@ contract Channel is ECVerification {
     {
         // Send the unwithdrawn _balance to the receiver
         uint receiverRemainingTokens = _balance.sub(withdrawnBalance);
+        withdrawnBalance = withdrawnBalance + receiverRemainingTokens; 
         status = State.Settled;
         require(token.transfer(_receiverAddress, receiverRemainingTokens));
 

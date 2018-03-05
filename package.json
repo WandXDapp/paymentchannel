@@ -21,7 +21,9 @@
     "truffle": "4.0.1"
   },
   "scripts": {
-    "test": "truffle test"
+    "test": "testrpc -l 1000000000 & truffle test",
+    "compile": "truffle compile --optimize-runs 200",
+    "test-coverage": "./node_modules/.bin/solidity-coverage"
   },
   "repository": {
     "type": "git",
@@ -39,5 +41,8 @@
   "bugs": {
     "url": "https://github.com/WandXDapp/paymentchannel/issues"
   },
-  "homepage": "https://github.com/WandXDapp/paymentchannel#readme"
+  "homepage": "https://github.com/WandXDapp/paymentchannel#readme",
+  "devDependencies": {
+    "solidity-coverage": "^0.4.11"
+  }
 }

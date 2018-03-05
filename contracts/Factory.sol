@@ -122,6 +122,14 @@ contract Factory {
         return Channel(_channelAddress).getChannelInfo();
     }
 
+    function getChallengeDetails(address _channelAddress) 
+    external view 
+    isContractAddress(_channelAddress)
+    returns (uint, uint, uint)
+    {
+        return Channel(_channelAddress).getChallengeInfo();
+    }
+
     function getAllChannelsAsSender () external view returns (address[]) {
         return channelsAsSender[msg.sender];
     }

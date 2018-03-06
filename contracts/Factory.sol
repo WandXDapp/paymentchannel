@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import './Channel.sol';
-import './lib/safeMath.sol';
+import "./Channel.sol";
+import "./lib/safeMath.sol";
 
 contract Factory {
     address public owner;

@@ -1,9 +1,9 @@
 pragma solidity ^0.4.18;
 
 
-import './lib/safeMath.sol';
-import './token/Token.sol';
-import './ECVerification.sol';
+import "./lib/safeMath.sol";
+import "./token/Token.sol";
+import "./ECVerification.sol";
 
 contract Channel is ECVerification {
 

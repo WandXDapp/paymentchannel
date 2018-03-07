@@ -2,6 +2,12 @@ pragma solidity ^0.4.18;
 
 contract ECVerification {
 
+    /**
+     * @dev `ecverify` to verify the signature
+     * @param hash hash prepared by callee contract
+     * @param signature signed message
+     * @return signatureAddress signer address
+     */
     function ecverify(bytes32 hash, bytes signature) public pure returns (address signatureAddress) {
         require(signature.length == 65);
 

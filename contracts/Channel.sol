@@ -25,6 +25,10 @@ contract Channel is ECVerification {
 
     Token public token;
 
+    /*
+     * modifiers
+     */
+
     modifier onlyFactory() {
         require(msg.sender == factory);
         _;
@@ -45,6 +49,9 @@ contract Channel is ECVerification {
         _;
     }
 
+    /**
+     * @dev `constructor`
+     */
     function Channel(address _receiver, address _sender, address _tokenAddress, uint _challengePeriod) 
     public
     {       
@@ -59,6 +66,11 @@ contract Channel is ECVerification {
         status = State.Initiated;
     }
 
+    /**
+     * @dev `recharge` to recharge channel once or multiple times
+     * @param _deposit no. of tokens
+     * @return bool 
+     */
     function recharge(uint _deposit) 
     external 
     onlyFactory originSender 
@@ -72,6 +84,12 @@ contract Channel is ECVerification {
         return true;
     }
 
+    /**
+     * @dev `withdraw` to withdraw tokens from channel once or multiple times
+     * @param _balance no. of tokens to withdraw
+     * @param _signedBalanceMsg balance hash signed by sender
+     * @return bool 
+     */
     function withdraw(uint _balance, bytes _signedBalanceMsg)
     external
     originReceiver onlyFactory
@@ -95,6 +113,12 @@ contract Channel is ECVerification {
         return true;
     }
     
+    /**
+     * @dev `mutualSettlement` to settle channel with mutual consent
+     * @param _signedBalanceMsg balance hash signed by sender
+     * @param _signedClosingMsg closing hash signed by receiver
+     * @return bool 
+     */
     function mutualSettlement(uint _balance, bytes _signedBalanceMsg, bytes _signedClosingMsg)
     external
     originSenderOrReceiver onlyFactory
@@ -123,6 +147,11 @@ contract Channel is ECVerification {
         return true;
     }
 
+    /**
+     * @dev `challengedSettlement` to start challenge period of channel
+     * @param _balance total balance allocated to receiver
+     * @return bool 
+     */
     function challengedSettlement(uint _balance)
     external
     originSender onlyFactory
@@ -137,6 +166,10 @@ contract Channel is ECVerification {
         return true;
     }
     
+    /**
+     * @dev `afterChallengeSettle` to settle channel after challenge period 
+     * @return _balance 
+     */
     function afterChallengeSettle() 
     external 
     originSender onlyFactory
@@ -149,7 +182,10 @@ contract Channel is ECVerification {
         return balanceInChallenge;
     }    
 
-
+    /**
+     * @dev `getChannelInfo` to get channel information any time 
+     * @return complete details 
+     */
     function getChannelInfo() onlyFactory external view returns (address, address, address, uint, uint, State, uint, uint){
         return( sender,
                 receiver,
@@ -162,6 +198,10 @@ contract Channel is ECVerification {
                 );
     }
 
+    /**
+     * @dev `getChallengeInfo` to get active challenge information  
+     * @return challenge parameters 
+     */
     function getChallengeInfo() onlyFactory external view returns (uint, uint, uint) {
         require(status == State.InChallenge);
         return( challengeStartTime,
@@ -170,6 +210,13 @@ contract Channel is ECVerification {
                 );
     }
     
+    /**
+     * @dev `extractBalanceProofSignature` to extract signer of signed Hash 
+     * @param _receiverAddress address of receiver 
+     * @param _balance no. of tokens for which hash is signed 
+     * @param _signedBalanceMsg signed balance message    
+     * @return challenge parameters 
+     */
     function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, bytes _signedBalanceMsg)
     internal view
     returns (address)
@@ -186,6 +233,13 @@ contract Channel is ECVerification {
         return signer;
     }
 
+    /**
+     * @dev `extractClosingSignature` to extract signer of closing Hash 
+     * @param _senderAddress address of sender 
+     * @param _balance no. of tokens for which hash is signed 
+     * @param _signedClosingMsg signed balance message    
+     * @return signer address 
+     */
     function extractClosingSignature(address _senderAddress, uint _balance, bytes _signedClosingMsg)
     internal view
     returns (address)
@@ -202,6 +256,13 @@ contract Channel is ECVerification {
         return signer;
     } 
 
+    /**
+     * @dev `settleChannel` to settle channel 
+     * @param _senderAddress address of sender 
+     * @param _receiverAddress address of receiver 
+     * @param _balance no. of tokens for which hash is signed    
+     * @return bool 
+     */
     function settleChannel(address _senderAddress, address _receiverAddress, uint _balance)
     internal 
     returns (bool)
@@ -217,6 +278,11 @@ contract Channel is ECVerification {
         return true;
     }
 
+    /**
+     * @dev `addressHasCode` to check if address is a contract address
+     * @param _contract address to check
+     * @return bool
+     */
     function addressHasCode(address _contract) internal view returns (bool) {
         uint size;
         assembly {

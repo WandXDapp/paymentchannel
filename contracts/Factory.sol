@@ -1,17 +1,21 @@
 pragma solidity ^0.4.18;
 
 import "./Channel.sol";
-import "./lib/safeMath.sol";
+import "./lib/SafeMath.sol";
 
 contract Factory {
 
     /*
      *  Data structures
      */
-
+    struct User{
+        address sender;
+        address receiver;
+    }
     address public owner;
     mapping(address => address[]) channelsAsSender;
     mapping(address => address[]) channelsAsReceiver;
+    mapping(address => User) channelUsers;
 
     Token public token;
 
@@ -36,30 +40,40 @@ contract Factory {
         _;
     }
 
+    modifier isSender(address _channelAddr, address _senderAddr) {
+        require(channelUsers[_channelAddr].sender == _senderAddr);
+        _;
+    }
+
+    modifier isReceiver(address _channelAddr, address _receiverAddr) {
+        require(channelUsers[_channelAddr].receiver == _receiverAddr);
+        _;
+    }
+
     /*
      * events
      */
 
     event ChannelCreated(
-        address indexed _senderAddress,
-        address indexed _receiverAddress,
-        address _channelAddress);
+    address indexed _senderAddress,
+    address indexed _receiverAddress,
+    address _channelAddress);
     
     event ChannelRecharged(
-        address indexed _senderAddress,
-        uint _deposit);
+    address indexed _senderAddress,
+    uint _deposit);
 
     event ChannelWithdraw(
-        address indexed _receiverAddress,
-        uint _withdrawnBalance);
+    address indexed _receiverAddress,
+    uint _withdrawnBalance);
 
     event ChannelSettled(
-        address indexed _settleAddress,
-        uint _balance);
+    address indexed _settleAddress,
+    uint _balance);
 
     event ChannelChallenged(
-        address indexed _senderAddress,
-        uint _balance);
+    address indexed _senderAddress,
+    uint _balance);
 
     /**
     * @dev `constructor`
@@ -84,7 +98,7 @@ contract Factory {
         require(addressHasCode(channel));
         channelsAsSender[sender].push(channel);
         channelsAsReceiver[_receiver].push(channel);
-
+        channelUsers[channel] = User(sender, _receiver);
         ChannelCreated(sender, _receiver, channel);
     }
     
@@ -95,7 +109,7 @@ contract Factory {
      */
     function rechargeChannel(address _channelAddress, uint _deposit) 
     external
-    isContractAddress(_channelAddress) nonZero(_deposit) 
+    isContractAddress(_channelAddress) nonZero(_deposit) isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         require(channel.recharge(_deposit));
@@ -107,14 +121,14 @@ contract Factory {
      * @dev `withdrawFromChannel` to withdraw a new channel
      * @param _channelAddress address of channel
      * @param _balance number of tokens to withdraw
-     * @param _balanceMsg balance hash signed by sender
+     * 
      */
-    function withdrawFromChannel(address _channelAddress, uint _balance, bytes _balanceMsg) 
+    function withdrawFromChannel(address _channelAddress, uint _balance, uint8 _v, bytes32 _r, bytes32 _s) 
     external
-    isContractAddress(_channelAddress) nonZero(_balance) 
+    isContractAddress(_channelAddress) nonZero(_balance) isReceiver(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
-        require(channel.withdraw(_balance, _balanceMsg));
+        require(channel.withdraw(_balance, _v, _r, _s));
 
         ChannelWithdraw(msg.sender, _balance);
     }
@@ -123,15 +137,15 @@ contract Factory {
      * @dev `channelMutualSettlement` to settle channel with mutual consent of sender & receiver
      * @param _channelAddress address of channel
      * @param _balance number of tokens to withdraw
-     * @param _balanceMsg balance hash signed by sender
-     * @param _closingMsg closing hash signed by receiver
+     * 
      */
-    function channelMutualSettlement(address _channelAddress, uint _balance, bytes _balanceMsg, bytes _closingMsg) 
+    function channelMutualSettlement(address _channelAddress, uint _balance, uint8 _vbal, bytes32 _rbal, bytes32 _sbal, uint8 _vclose, bytes32 _rclose, bytes32 _sclose) 
     external
     isContractAddress(_channelAddress) nonZero(_balance) 
     {
+        require(channelUsers[_channelAddress].sender == msg.sender || channelUsers[_channelAddress].receiver == msg.sender);
         channel = Channel(_channelAddress);
-        require(channel.mutualSettlement(_balance, _balanceMsg, _closingMsg));
+        require(channel.mutualSettlement(_balance, _vbal, _rbal, _sbal, _vclose, _rclose, _sclose));
 
         ChannelSettled(msg.sender, _balance);
     }

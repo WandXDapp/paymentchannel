@@ -1,16 +1,16 @@
 pragma solidity ^0.4.18;
 
-import "../lib/safeMath.sol";
+import "../lib/SafeMath.sol";
 
 contract ERC20 {
-  uint256 public totalSupply;
-  function balanceOf(address who) public view returns (uint256);
-  function transfer(address to, uint256 value) public returns (bool);
-  event Transfer(address indexed from, address indexed to, uint256 value);
-  function allowance(address owner, address spender) public view returns (uint256);
-  function transferFrom(address from, address to, uint256 value) public returns (bool);
-  function approve(address spender, uint256 value) public returns (bool);
-  event Approval(address indexed owner, address indexed spender, uint256 value);
+    uint256 public totalSupply;
+    function balanceOf(address who) public view returns (uint256);
+    function transfer(address to, uint256 value) public returns (bool);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    function allowance(address owner, address spender) public view returns (uint256);
+    function transferFrom(address from, address to, uint256 value) public returns (bool);
+    function approve(address spender, uint256 value) public returns (bool);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
     
 }
 
@@ -46,17 +46,17 @@ contract BasicToken is ERC20 {
    */
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-      if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
-        uint256 _allowance = allowed[_from][msg.sender];
-        allowed[_from][msg.sender] = _allowance.sub(_value);
-        balances[_to] = balances[_to].add(_value);
-        balances[_from] = balances[_from].sub(_value);
-        Transfer(_from, _to, _value);
-        return true;
+        if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
+            uint256 _allowance = allowed[_from][msg.sender];
+            allowed[_from][msg.sender] = _allowance.sub(_value);
+            balances[_to] = balances[_to].add(_value);
+            balances[_from] = balances[_from].sub(_value);
+            Transfer(_from, _to, _value);
+            return true;
       } else {
-        return false;
+            return false;
       }
-}
+    }
 
 
     /**
@@ -66,21 +66,21 @@ contract BasicToken is ERC20 {
   */
 
     function balanceOf(address _owner) public view returns (uint256 balance) {
-    return balances[_owner];
-  }
+        return balances[_owner];
+    }
 
-  function approve(address _spender, uint256 _value) public returns (bool) {
+    function approve(address _spender, uint256 _value) public returns (bool) {
 
     // To change the approve amount you first have to reduce the addresses`
     //  allowance to zero by calling `approve(_spender, 0)` if it is not
     //  already 0 to mitigate the race condition described here:
     //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-    require((_value == 0) || (allowed[msg.sender][_spender] == 0));
+        require((_value == 0) || (allowed[msg.sender][_spender] == 0));
 
-    allowed[msg.sender][_spender] = _value;
-    Approval(msg.sender, _spender, _value);
-    return true;
-  }
+        allowed[msg.sender][_spender] = _value;
+        Approval(msg.sender, _spender, _value);
+        return true;
+    }
 
   /**
    * @dev Function to check the amount of tokens that an owner allowed to a spender.
@@ -88,9 +88,9 @@ contract BasicToken is ERC20 {
    * @param _spender address The address which will spend the funds.
    * @return A uint256 specifing the amount of tokens still avaible for the spender.
    */
-  function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
-    return allowed[_owner][_spender];
-  }
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+        return allowed[_owner][_spender];
+    }
 
 
 }
@@ -103,7 +103,7 @@ contract TestToken is BasicToken {
     uint256 public totalSupply = 1000000 * 10 ** 18;
 
     function TestToken() public {
-      balances[msg.sender] = totalSupply;
+        balances[msg.sender] = totalSupply;
     }
     
 }

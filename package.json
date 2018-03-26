@@ -14,12 +14,14 @@
     "babel-register": "6.26.0",
     "bignumber.js": "4.0.2",
     "ethereumjs-testrpc": "4.1.1",
-    "ethereumjs-util": "^5.1.4",
+    "ethereumjs-util": "^5.1.5",
     "ethers": "^2.2.6",
+    "ethjs-util": "^0.1.4",
     "left-pad": "^1.2.0",
     "solc": "0.4.19",
     "truffle": "4.0.1",
-    "truffle-hdwallet-provider": "0.0.3"
+    "truffle-hdwallet-provider": "0.0.3",
+    "web3": "^1.0.0-beta.33"
   },
   "scripts": {
     "test": "testrpc -l 1000000000 & truffle test",

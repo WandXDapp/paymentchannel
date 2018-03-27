@@ -7,29 +7,16 @@ pragma solidity ^0.4.18;
 library SafeMath {
 
   // mul and div are not being used
-  // function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-  //   uint256 c = a * b;
-  //   assert(a == 0 || c / a == b);
-  //   return c;
-  // }
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        assert(b <= a);
+        return a - b;
+    }
 
-  // function div(uint256 a, uint256 b) internal pure returns (uint256) {
-  //   // assert(b > 0); // Solidity automatically throws when dividing by 0
-  //   uint256 c = a / b;
-  //   // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-  //   return c;
-  // }
-
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        assert(c >= a);
+        return c;
+    }
 }
 
 /// @title Base Token contract - Functions to be implemented by token contracts.
@@ -88,51 +75,7 @@ contract Token {
 
 }
 
-contract ECVerification {
-
-    /**
-     * @dev `ecverify` to verify the signature
-     * @param hash hash prepared by callee contract
-     * @param signature signed message
-     * @return signatureAddress signer address
-     */
-    function ecverify(bytes32 hash, bytes signature) public pure returns (address signatureAddress) {
-        require(signature.length == 65);
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // The signature format is a compact form of:
-        //   {bytes32 r}{bytes32 s}{uint8 v}
-        // Compact means, uint8 is not padded to 32 bytes.
-        assembly {
-            r := mload(add(signature, 32))
-            s := mload(add(signature, 64))
-            v := and(mload(add(signature, 65)), 255)
-        }
-
-        // Version of signature should be 27 or 28, but 0 and 1 are also possible
-        if (v < 27) {
-            v += 27;
-        }
-
-        require(v == 27 || v == 28);
-        /* 
-        * https://github.com/ethereum/go-ethereum/issues/3731
-        */
-        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        hash = keccak256(prefix, hash);
-        signatureAddress = ecrecover(hash, v, r, s);
-
-        // ecrecover returns zero on error
-        require(signatureAddress != 0x0);
-
-        return signatureAddress;
-    }
-}
-
-contract Channel is ECVerification {
+contract Channel {
 
     using SafeMath for uint256;
 
@@ -161,21 +104,6 @@ contract Channel is ECVerification {
         _;
     }
 
-    modifier originReceiver() {
-        require(tx.origin == receiver);
-        _;
-    }
-
-    modifier originSender() {
-        require(tx.origin == sender);
-        _;
-    }
-
-    modifier originSenderOrReceiver() {
-        require(tx.origin == sender || tx.origin == receiver);
-        _;
-    }
-
     /**
      * @dev `constructor`
      */
@@ -200,76 +128,57 @@ contract Channel is ECVerification {
      */
     function recharge(uint _deposit) 
     external 
-    onlyFactory originSender 
+    onlyFactory  
     returns (bool)
     {
-        require(token.allowance(sender, address(this)) >= _deposit);
         require(token.transferFrom(sender, address(this), _deposit));
         depositedBalance = _deposit;
         status = State.Recharged;
-
         return true;
     }
 
     /**
      * @dev `withdraw` to withdraw tokens from channel once or multiple times
      * @param _balance no. of tokens to withdraw
-     * @param _signedBalanceMsg balance hash signed by sender
+     * @param _vbal v of signedBalanceHash
+     * @param _rbal r of signedBalanceHash
+     * @param _sbal s of signedBalanceHash
      * @return bool 
      */
-    function withdraw(uint _balance, bytes _signedBalanceMsg)
+    function withdraw(uint _balance, uint8 _vbal, bytes32 _rbal, bytes32 _sbal)
     external
-    originReceiver onlyFactory
+    onlyFactory
     returns (bool)
     {
         require(status == State.Recharged);
-        require(_balance <= depositedBalance.sub(withdrawnBalance));
-                
-        // Derive sender address from signed balance proof
-        address senderAddress = extractBalanceProofSignature(
-            receiver,
-            _balance,
-            _signedBalanceMsg
-        );
-        require(senderAddress == sender);
+        require(_balance <= depositedBalance.sub(withdrawnBalance));                
+        require(extractBalanceProofSignature(receiver, _balance, _vbal, _rbal, _sbal));
         // Update total withdrawn balance
         withdrawnBalance = withdrawnBalance.add(_balance);
-
-        // Send the remaining balance to the receiver
         require(token.transfer(receiver, _balance));
         return true;
     }
     
     /**
      * @dev `mutualSettlement` to settle channel with mutual consent
-     * @param _signedBalanceMsg balance hash signed by sender
-     * @param _signedClosingMsg closing hash signed by receiver
+     * @param _balance no. of tokens to withdraw
+     * @param _vbal v of signedBalanceHash
+     * @param _rbal r of signedBalanceHash
+     * @param _sbal s of signedBalanceHash
+     * @param _vclose v of signedClosingHash
+     * @param _rclose r of signedClosingHash
+     * @param _sclose s of signedClosingHash
      * @return bool 
      */
-    function mutualSettlement(uint _balance, bytes _signedBalanceMsg, bytes _signedClosingMsg)
+    function mutualSettlement(uint _balance, uint8 _vbal, bytes32 _rbal, bytes32 _sbal, uint8 _vclose, bytes32 _rclose, bytes32 _sclose)
     external
-    originSenderOrReceiver onlyFactory
+    onlyFactory
     returns (bool)
     {
         require(status == State.Recharged || status == State.InChallenge);
         require(_balance <= depositedBalance.sub(withdrawnBalance));
-        
-        // Derive sender address from signed balance proof
-        address senderAddr = extractBalanceProofSignature(
-            receiver,
-            _balance,
-            _signedBalanceMsg
-        );
-        require(senderAddr == sender);
-        // Derive receiver address from closing signature
-        address receiverAddr = extractClosingSignature(
-            senderAddr,
-            _balance,
-            _signedClosingMsg
-        );
-        require(receiverAddr == receiver);
-
-        // Both signatures have been verified and the channel can be settled.
+        require(extractBalanceProofSignature(receiver, _balance, _vbal, _rbal, _sbal));
+        require(extractClosingSignature(sender, _balance, _vclose, _rclose, _sclose));
         require(settleChannel(sender, receiver, _balance));
         return true;
     }
@@ -281,7 +190,7 @@ contract Channel is ECVerification {
      */
     function challengedSettlement(uint _balance)
     external
-    originSender onlyFactory
+    onlyFactory
     returns (bool)
     {
         require(status == State.Recharged);
@@ -299,7 +208,7 @@ contract Channel is ECVerification {
      */
     function afterChallengeSettle() 
     external 
-    originSender onlyFactory
+    onlyFactory
     returns (uint)
     {
         require(status == State.InChallenge); 
@@ -322,7 +231,7 @@ contract Channel is ECVerification {
                 status,
                 depositedBalance,
                 withdrawnBalance
-                );
+        );
     }
 
     /**
@@ -334,53 +243,43 @@ contract Channel is ECVerification {
         return( challengeStartTime,
                 challengePeriod,
                 balanceInChallenge
-                );
+        );
     }
     
     /**
      * @dev `extractBalanceProofSignature` to extract signer of signed Hash 
      * @param _receiverAddress address of receiver 
      * @param _balance no. of tokens for which hash is signed 
-     * @param _signedBalanceMsg signed balance message    
-     * @return challenge parameters 
+     * @param _v v of signedBalanceHash
+     * @param _r r of signedBalanceHash
+     * @param _s s of signedBalanceHash   
+     * @return bool 
      */
-    function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, bytes _signedBalanceMsg)
+    function extractBalanceProofSignature(address _receiverAddress, uint256 _balance, uint8 _v, bytes32 _r, bytes32 _s)
     internal view
-    returns (address)
+    returns (bool)
     {
-        bytes32 msgHash = keccak256(
-                "Sender Balance Proof Sign",
-                _receiverAddress,
-                _balance,
-                address(this)   
-            );
-
-        // Derive address from signature
-        address signer = ecverify(msgHash, _signedBalanceMsg);
-        return signer;
+        bytes32 msgHash = keccak256(_receiverAddress, _balance, address(this));
+        require(ecrecover(keccak256("\x19Ethereum Signed Message:\n32", msgHash), _v, _r, _s) == sender);
+        return true;
     }
 
     /**
      * @dev `extractClosingSignature` to extract signer of closing Hash 
      * @param _senderAddress address of sender 
-     * @param _balance no. of tokens for which hash is signed 
-     * @param _signedClosingMsg signed balance message    
-     * @return signer address 
+     * @param _balance no. of tokens for which hash is signed
+     * @param _v v of signedClosingHash
+     * @param _r r of signedClosingHash
+     * @param _s s of signedClosingHash    
+     * @return bool 
      */
-    function extractClosingSignature(address _senderAddress, uint _balance, bytes _signedClosingMsg)
+    function extractClosingSignature(address _senderAddress, uint _balance, uint8 _v, bytes32 _r, bytes32 _s)
     internal view
-    returns (address)
+    returns (bool)
     {
-        bytes32 msgHash = keccak256(
-                "Receiver Closing Sign",
-                _senderAddress,
-                _balance,
-                address(this)
-            );
-
-        // Derive address from signature
-        address signer = ecverify(msgHash, _signedClosingMsg);
-        return signer;
+        bytes32 msgHash = keccak256(_senderAddress, _balance, address(this));
+        require(ecrecover(keccak256("\x19Ethereum Signed Message:\n32", msgHash), _v, _r, _s) == receiver);
+        return true;
     } 
 
     /**
@@ -425,10 +324,14 @@ contract Factory {
     /*
      *  Data structures
      */
-
+    struct User{
+        address sender;
+        address receiver;
+    }
     address public owner;
     mapping(address => address[]) channelsAsSender;
     mapping(address => address[]) channelsAsReceiver;
+    mapping(address => User) channelUsers;
 
     Token public token;
 
@@ -453,30 +356,40 @@ contract Factory {
         _;
     }
 
+    modifier isSender(address _channelAddr, address _senderAddr) {
+        require(channelUsers[_channelAddr].sender == _senderAddr);
+        _;
+    }
+
+    modifier isReceiver(address _channelAddr, address _receiverAddr) {
+        require(channelUsers[_channelAddr].receiver == _receiverAddr);
+        _;
+    }
+
     /*
      * events
      */
 
     event ChannelCreated(
-        address indexed _senderAddress,
-        address indexed _receiverAddress,
-        address _channelAddress);
+    address indexed _senderAddress,
+    address indexed _receiverAddress,
+    address _channelAddress);
     
     event ChannelRecharged(
-        address indexed _senderAddress,
-        uint _deposit);
+    address indexed _senderAddress,
+    uint _deposit);
 
     event ChannelWithdraw(
-        address indexed _receiverAddress,
-        uint _withdrawnBalance);
+    address indexed _receiverAddress,
+    uint _withdrawnBalance);
 
     event ChannelSettled(
-        address indexed _settleAddress,
-        uint _balance);
+    address indexed _settleAddress,
+    uint _balance);
 
     event ChannelChallenged(
-        address indexed _senderAddress,
-        uint _balance);
+    address indexed _senderAddress,
+    uint _balance);
 
     /**
     * @dev `constructor`
@@ -501,7 +414,7 @@ contract Factory {
         require(addressHasCode(channel));
         channelsAsSender[sender].push(channel);
         channelsAsReceiver[_receiver].push(channel);
-
+        channelUsers[channel] = User(sender, _receiver);
         ChannelCreated(sender, _receiver, channel);
     }
     
@@ -512,7 +425,7 @@ contract Factory {
      */
     function rechargeChannel(address _channelAddress, uint _deposit) 
     external
-    isContractAddress(_channelAddress) nonZero(_deposit) 
+    isContractAddress(_channelAddress) nonZero(_deposit) isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         require(channel.recharge(_deposit));
@@ -524,14 +437,16 @@ contract Factory {
      * @dev `withdrawFromChannel` to withdraw a new channel
      * @param _channelAddress address of channel
      * @param _balance number of tokens to withdraw
-     * @param _balanceMsg balance hash signed by sender
+     * @param _v v of signedBalanceHash
+     * @param _r r of signedBalanceHash
+     * @param _s s of signedBalanceHash
      */
-    function withdrawFromChannel(address _channelAddress, uint _balance, bytes _balanceMsg) 
+    function withdrawFromChannel(address _channelAddress, uint _balance, uint8 _v, bytes32 _r, bytes32 _s) 
     external
-    isContractAddress(_channelAddress) nonZero(_balance) 
+    isContractAddress(_channelAddress) nonZero(_balance) isReceiver(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
-        require(channel.withdraw(_balance, _balanceMsg));
+        require(channel.withdraw(_balance, _v, _r, _s));
 
         ChannelWithdraw(msg.sender, _balance);
     }
@@ -540,15 +455,20 @@ contract Factory {
      * @dev `channelMutualSettlement` to settle channel with mutual consent of sender & receiver
      * @param _channelAddress address of channel
      * @param _balance number of tokens to withdraw
-     * @param _balanceMsg balance hash signed by sender
-     * @param _closingMsg closing hash signed by receiver
+     * @param _vbal v of signedBalanceHash
+     * @param _rbal r of signedBalanceHash
+     * @param _sbal s of signedBalanceHash
+     * @param _vclose v of signedClosingHash
+     * @param _rclose r of signedClosingHash
+     * @param _sclose s of signedClosingHash
      */
-    function channelMutualSettlement(address _channelAddress, uint _balance, bytes _balanceMsg, bytes _closingMsg) 
+    function channelMutualSettlement(address _channelAddress, uint _balance, uint8 _vbal, bytes32 _rbal, bytes32 _sbal, uint8 _vclose, bytes32 _rclose, bytes32 _sclose) 
     external
     isContractAddress(_channelAddress) nonZero(_balance) 
     {
+        require(channelUsers[_channelAddress].sender == msg.sender || channelUsers[_channelAddress].receiver == msg.sender);
         channel = Channel(_channelAddress);
-        require(channel.mutualSettlement(_balance, _balanceMsg, _closingMsg));
+        require(channel.mutualSettlement(_balance, _vbal, _rbal, _sbal, _vclose, _rclose, _sclose));
 
         ChannelSettled(msg.sender, _balance);
     }
@@ -560,7 +480,7 @@ contract Factory {
      */
     function channelChallengedSettlement(address _channelAddress, uint _balance) 
     external
-    isContractAddress(_channelAddress) nonZero(_balance) 
+    isContractAddress(_channelAddress) nonZero(_balance) isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         require(channel.challengedSettlement(_balance));
@@ -574,7 +494,7 @@ contract Factory {
      */
     function channelAfterChallengeSettlement(address _channelAddress) 
     external
-    isContractAddress(_channelAddress)
+    isContractAddress(_channelAddress) isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         var balance = channel.afterChallengeSettle();
@@ -622,6 +542,14 @@ contract Factory {
      */
     function getAllChannelsAsReceiver () external view returns (address[]) {
         return channelsAsReceiver[msg.sender];
+    }
+
+    /**
+     * @dev `getChannelUsers` to get sender and receiver of channel
+     * @return struct User
+     */
+    function getChannelUsers (address channelAddress) external view returns (address, address) {
+        return (channelUsers[channelAddress].sender, channelUsers[channelAddress].receiver);
     }
     
     /**

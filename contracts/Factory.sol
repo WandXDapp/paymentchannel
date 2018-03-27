@@ -121,7 +121,9 @@ contract Factory {
      * @dev `withdrawFromChannel` to withdraw a new channel
      * @param _channelAddress address of channel
      * @param _balance number of tokens to withdraw
-     * 
+     * @param _v v of signedBalanceHash
+     * @param _r r of signedBalanceHash
+     * @param _s s of signedBalanceHash
      */
     function withdrawFromChannel(address _channelAddress, uint _balance, uint8 _v, bytes32 _r, bytes32 _s) 
     external
@@ -137,7 +139,12 @@ contract Factory {
      * @dev `channelMutualSettlement` to settle channel with mutual consent of sender & receiver
      * @param _channelAddress address of channel
      * @param _balance number of tokens to withdraw
-     * 
+     * @param _vbal v of signedBalanceHash
+     * @param _rbal r of signedBalanceHash
+     * @param _sbal s of signedBalanceHash
+     * @param _vclose v of signedClosingHash
+     * @param _rclose r of signedClosingHash
+     * @param _sclose s of signedClosingHash
      */
     function channelMutualSettlement(address _channelAddress, uint _balance, uint8 _vbal, bytes32 _rbal, bytes32 _sbal, uint8 _vclose, bytes32 _rclose, bytes32 _sclose) 
     external
@@ -219,6 +226,14 @@ contract Factory {
      */
     function getAllChannelsAsReceiver () external view returns (address[]) {
         return channelsAsReceiver[msg.sender];
+    }
+
+    /**
+     * @dev `getChannelUsers` to get sender and receiver of channel
+     * @return struct User
+     */
+    function getChannelUsers (address channelAddress) external view returns (address, address) {
+        return (channelUsers[channelAddress].sender, channelUsers[channelAddress].receiver);
     }
     
     /**

@@ -21,16 +21,9 @@ contract('Factory', (accounts) => {
     let testAddress2;    
 
     beforeEach(async() => {
-        
-        // // to manage the gas for test cases tranasaction execution
-        // web3.eth.sendTransaction({from:accounts[8], to:accounts[0], value: ether(1)});
-        // web3.eth.sendTransaction({from:accounts[7], to:accounts[1], value: ether(1)});
-        // web3.eth.sendTransaction({from:accounts[6], to:accounts[2], value: ether(1)});
-
         receiver = accounts[1];
         testAddress1 = accounts[2];
-        testAddress2 = accounts[3];
-        
+        testAddress2 = accounts[3];        
     });
 
     it("Verify constructors", async()=>{
@@ -46,8 +39,10 @@ contract('Factory', (accounts) => {
         let factory = await Factory.new();
         let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
         let channelAddress = channel.logs[0].args._channelAddress;
-        let channelDetails = await factory.getInfo(channelAddress);        
-        
+        let channelDetails = await factory.getInfo(channelAddress);
+        let users = await factory.getChannelUsers(channelAddress);       
+        assert.strictEqual( users[0], accounts[0]);
+        assert.strictEqual( users[1], receiver);
         assert.strictEqual(channelDetails[0], accounts[0]); // accounts[0] = default
         assert.strictEqual(channelDetails[1], receiver);
         assert.strictEqual(channelDetails[2], Token.address);

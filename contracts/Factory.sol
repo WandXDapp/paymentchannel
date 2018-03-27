@@ -157,7 +157,7 @@ contract Factory {
      */
     function channelChallengedSettlement(address _channelAddress, uint _balance) 
     external
-    isContractAddress(_channelAddress) nonZero(_balance) 
+    isContractAddress(_channelAddress) nonZero(_balance) isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         require(channel.challengedSettlement(_balance));
@@ -171,7 +171,7 @@ contract Factory {
      */
     function channelAfterChallengeSettlement(address _channelAddress) 
     external
-    isContractAddress(_channelAddress)
+    isContractAddress(_channelAddress) isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         var balance = channel.afterChallengeSettle();

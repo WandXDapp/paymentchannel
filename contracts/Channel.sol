@@ -197,7 +197,7 @@ contract Channel {
     returns (bool)
     {
         bytes32 msgHash = keccak256(_senderAddress, _balance, address(this));
-        require(ecrecover(keccak256("\x19Ethereum Signed Message:\n32", msgHash), _v, _r, _s) == sender);
+        require(ecrecover(keccak256("\x19Ethereum Signed Message:\n32", msgHash), _v, _r, _s) == receiver);
         return true;
     } 
 

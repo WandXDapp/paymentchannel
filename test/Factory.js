@@ -1,4 +1,3 @@
-const ECV = artifacts.require('ECVerification.sol');
 const Factory = artifacts.require('Factory.sol');
 const TestToken = artifacts.require('TestToken.sol');
 const BigNumber = require('bignumber.js');
@@ -6,12 +5,8 @@ const Web3 = require('web3');
 const Utils = require('./helpers/utils');
 const ethUtil = require('ethereumjs-util');
 const time = require('./helpers/time');
-const transactionMined = require('./helpers/transactionMined');
-import ether from './helpers/ether';
-import latestTime from './helpers/latestTime';
-import leftPad from 'left-pad';
 
-var web3 = new Web3('http://localhost:9545');
+var web3 = new Web3(Web3.givenProvider);
 
 contract('Factory', (accounts) => {
     

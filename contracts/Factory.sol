@@ -25,21 +25,6 @@ contract Factory {
      * modifiers
      */
 
-    modifier nonZero(uint _param) {
-        require(_param > 0);
-        _;
-    }
-
-    modifier nonZeroAddress(address _addr) {
-        require(_addr != address(0));
-        _;
-    }
-
-    modifier isContractAddress(address _addr) {
-        require(_addr != address(0) && addressHasCode(_addr));
-        _;
-    }
-
     modifier isSender(address _channelAddr, address _senderAddr) {
         require(channelUsers[_channelAddr].sender == _senderAddr);
         _;
@@ -91,8 +76,9 @@ contract Factory {
      */
     function createChannel (address _receiver, address _tokenAddress, uint _challengePeriod) 
     external
-    nonZeroAddress(_receiver) isContractAddress(_tokenAddress) nonZero(_challengePeriod)
     {
+        require(_receiver != address(0) && _receiver != msg.sender);
+        require(_challengePeriod > 0);
         address sender = msg.sender;
         channel = new Channel(_receiver,  sender, _tokenAddress, _challengePeriod);
         require(addressHasCode(channel));
@@ -109,7 +95,7 @@ contract Factory {
      */
     function rechargeChannel(address _channelAddress, uint _deposit) 
     external
-    isContractAddress(_channelAddress) nonZero(_deposit) isSender(_channelAddress, msg.sender)
+    isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         require(channel.recharge(_deposit));
@@ -127,7 +113,7 @@ contract Factory {
      */
     function withdrawFromChannel(address _channelAddress, uint _balance, uint8 _v, bytes32 _r, bytes32 _s) 
     external
-    isContractAddress(_channelAddress) nonZero(_balance) isReceiver(_channelAddress, msg.sender)
+    isReceiver(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         require(channel.withdraw(_balance, _v, _r, _s));
@@ -147,8 +133,7 @@ contract Factory {
      * @param _sclose s of signedClosingHash
      */
     function channelMutualSettlement(address _channelAddress, uint _balance, uint8 _vbal, bytes32 _rbal, bytes32 _sbal, uint8 _vclose, bytes32 _rclose, bytes32 _sclose) 
-    external
-    isContractAddress(_channelAddress) nonZero(_balance) 
+    external 
     {
         require(channelUsers[_channelAddress].sender == msg.sender || channelUsers[_channelAddress].receiver == msg.sender);
         channel = Channel(_channelAddress);
@@ -164,7 +149,7 @@ contract Factory {
      */
     function channelChallengedSettlement(address _channelAddress, uint _balance) 
     external
-    isContractAddress(_channelAddress) nonZero(_balance) isSender(_channelAddress, msg.sender)
+    isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         require(channel.challengedSettlement(_balance));
@@ -178,7 +163,7 @@ contract Factory {
      */
     function channelAfterChallengeSettlement(address _channelAddress) 
     external
-    isContractAddress(_channelAddress) isSender(_channelAddress, msg.sender)
+    isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
         var balance = channel.afterChallengeSettle();
@@ -193,7 +178,6 @@ contract Factory {
      */
     function getInfo(address _channelAddress) 
     external view 
-    isContractAddress(_channelAddress)
     returns (address, address, address, uint, uint, Channel.State, uint, uint)
     {
         return Channel(_channelAddress).getChannelInfo();
@@ -206,7 +190,6 @@ contract Factory {
      */
     function getChallengeDetails(address _channelAddress) 
     external view 
-    isContractAddress(_channelAddress)
     returns (uint, uint, uint)
     {
         return Channel(_channelAddress).getChallengeInfo();

@@ -19,7 +19,7 @@ contract Channel {
     uint withdrawnBalance = 0;
     uint balanceInChallenge = 0;
 
-    enum State {Initiated, Recharged, InChallenge, Settled }
+    enum State {Initiated, Recharged, Withdrawn, InChallenge, Settled }
     State status;
 
     Token public token;
@@ -61,13 +61,13 @@ contract Channel {
     returns (bool)
     {
         require(token.transferFrom(sender, address(this), _deposit));
-        depositedBalance = _deposit;
+        depositedBalance = depositedBalance + _deposit;
         status = State.Recharged;
         return true;
     }
 
     /**
-     * @dev `withdraw` to withdraw tokens from channel once or multiple times
+     * @dev `withdraw` to withdraw tokens from channel only once 
      * @param _balance no. of tokens to withdraw
      * @param _vbal v of signedBalanceHash
      * @param _rbal r of signedBalanceHash
@@ -80,10 +80,11 @@ contract Channel {
     returns (bool)
     {
         require(status == State.Recharged);
-        require(_balance <= depositedBalance.sub(withdrawnBalance));                
+        require(_balance <= depositedBalance);                
         require(extractBalanceProofSignature(receiver, _balance, _vbal, _rbal, _sbal));
         // Update total withdrawn balance
-        withdrawnBalance = withdrawnBalance.add(_balance);
+        withdrawnBalance = _balance;
+        status = State.Withdrawn;
         require(token.transfer(receiver, _balance));
         return true;
     }
@@ -104,8 +105,8 @@ contract Channel {
     onlyFactory
     returns (bool)
     {
-        require(status == State.Recharged || status == State.InChallenge);
-        require(_balance <= depositedBalance.sub(withdrawnBalance));
+        require(status != State.Settled);
+        require(_balance <= depositedBalance);
         require(extractBalanceProofSignature(receiver, _balance, _vbal, _rbal, _sbal));
         require(extractClosingSignature(sender, _balance, _vclose, _rclose, _sclose));
         require(settleChannel(sender, receiver, _balance));
@@ -122,7 +123,7 @@ contract Channel {
     onlyFactory
     returns (bool)
     {
-        require(status == State.Recharged);
+        require(status == State.Recharged || status == State.Withdrawn);
         require(_balance <= depositedBalance);
 
         challengeStartTime = now;
@@ -168,7 +169,6 @@ contract Channel {
      * @return challenge parameters 
      */
     function getChallengeInfo() onlyFactory external view returns (uint, uint, uint) {
-        require(status == State.InChallenge);
         return( challengeStartTime,
                 challengePeriod,
                 balanceInChallenge
@@ -189,7 +189,7 @@ contract Channel {
     returns (bool)
     {
         bytes32 msgHash = keccak256(_receiverAddress, _balance, address(this));
-        require(ecrecover(keccak256("\x19Ethereum Signed Message:\n32", msgHash), _v, _r, _s) == sender);
+        require(ecrecover(msgHash, _v, _r, _s) == sender);
         return true;
     }
 
@@ -207,7 +207,7 @@ contract Channel {
     returns (bool)
     {
         bytes32 msgHash = keccak256(_senderAddress, _balance, address(this));
-        require(ecrecover(keccak256("\x19Ethereum Signed Message:\n32", msgHash), _v, _r, _s) == receiver);
+        require(ecrecover(msgHash, _v, _r, _s) == receiver);
         return true;
     } 
 
@@ -223,13 +223,15 @@ contract Channel {
     returns (bool)
     {
         // Send the unwithdrawn _balance to the receiver
-        uint receiverRemainingTokens = _balance.sub(withdrawnBalance);
-        withdrawnBalance = withdrawnBalance + receiverRemainingTokens; 
         status = State.Settled;
-        require(token.transfer(_receiverAddress, receiverRemainingTokens));
+        require(token.transfer(_receiverAddress, _balance.sub(withdrawnBalance)));
 
         // Send remaining tokens back to sender
-        require(token.transfer(_senderAddress, depositedBalance.sub(receiverRemainingTokens)));
+        var remainingTokens = depositedBalance.sub(_balance);
+        if(remainingTokens > 0)
+        {
+            require(token.transfer(_senderAddress, remainingTokens));
+        }
         return true;
     }
 

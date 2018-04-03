@@ -2,4 +2,4 @@
 Micropayment channel of ERC20 token
 
 # Deployment
-Factory: 0x6fe1081cdd116c8df0e568e225a15896adc81296
+Factory: 0xe621d1394734C87b1c69393781206cDf3F665149 (On Ropsten)

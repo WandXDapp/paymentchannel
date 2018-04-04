@@ -96,85 +96,125 @@ contract('Factory', (accounts) => {
         });
     });
 
-    // describe('rechargeChannel', async() => {    
+    describe('rechargeChannel', async() => {    
 
-    //     it("rechargeChannel : Approved tokens will be transferred to channel", async()=>{
-    //         let Token = await TestToken.new({from: sender});
-    //         let challengePeriod = 500;
-    //         let factory = await Factory.new({from: sender});
-    //         let channel = await factory.createChannel(receiver, Token.address, challengePeriod,{from: sender});
-    //         let channelAddress = channel.logs[0].args._channelAddress;
-    //         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)), {from: sender});
-    //         assert.strictEqual(new BigNumber(await Token.allowance(accounts[0], channelAddress)).toNumber(), 
-    //                             new BigNumber(1000).times(new BigNumber(10).pow(18)).toNumber());
-    //         let tokenAmount = 500;
-    //         await factory.rechargeChannel(channelAddress, new BigNumber(tokenAmount).times(new BigNumber(10).pow(18)), {from: sender}); 
-    //         assert.strictEqual((await Token.balanceOf(channelAddress)).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount);
+        it("rechargeChannel : Approved tokens will be transferred to channel", async()=>{
+            let Token = await TestToken.new({from: sender});
+            let challengePeriod = 500;
+            let factory = await Factory.new({from: sender});
+            let channel = await factory.createChannel(receiver, Token.address, challengePeriod,{from: sender});
+            let channelAddress = channel.logs[0].args._channelAddress;
+            await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)), {from: sender});
+            assert.strictEqual(new BigNumber(await Token.allowance(accounts[0], channelAddress)).toNumber(), 
+                                new BigNumber(1000).times(new BigNumber(10).pow(18)).toNumber());
+            let tokenAmount = 500;
+            await factory.rechargeChannel(channelAddress, new BigNumber(tokenAmount).times(new BigNumber(10).pow(18)), {from: sender}); 
+            assert.strictEqual((await Token.balanceOf(channelAddress)).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount);
             
-    //         let channelDetails = await factory.getInfo(channelAddress);        
-    //         assert.strictEqual(new BigNumber(channelDetails[6]).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount);
-    //         assert.strictEqual(new BigNumber(channelDetails[5]).toNumber(), 1); //status : 1 = Recharged
-    //     });
+            let channelDetails = await factory.getInfo(channelAddress);        
+            assert.strictEqual(new BigNumber(channelDetails[6]).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount);
+            assert.strictEqual(new BigNumber(channelDetails[5]).toNumber(), 1); //status : 1 = Recharged
+        });
 
-//     it("rechargeChannel : with non-contract channel address (should fail)", async()=>{
-//         let Token = await TestToken.new();
-//         let challengePeriod = 500;
-//         let factory = await Factory.new();
-//         let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
-//         let channelAddress = channel.logs[0].args._channelAddress;
-//         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
-//         try{
-//             await factory.rechargeChannel(testAddress1, new BigNumber(500).times(new BigNumber(10).pow(18)));      
-//         }catch(error){
-//             //console.log(error);
-//             Utils.ensureException(error);
-//         }
-//     });
+        it("rechargeChannel : twice before withdrawal by receiver", async()=>{
+            let Token = await TestToken.new({from: sender});
+            let challengePeriod = 500;
+            let factory = await Factory.new({from: sender});
+            let channel = await factory.createChannel(receiver, Token.address, challengePeriod,{from: sender});
+            let channelAddress = channel.logs[0].args._channelAddress;
+            await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)), {from: sender});
+            assert.strictEqual(new BigNumber(await Token.allowance(accounts[0], channelAddress)).toNumber(), 
+                                new BigNumber(1000).times(new BigNumber(10).pow(18)).toNumber());
+            let tokenAmount = 500;
+            await factory.rechargeChannel(channelAddress, new BigNumber(tokenAmount).times(new BigNumber(10).pow(18)), {from: sender}); 
+            assert.strictEqual((await Token.balanceOf(channelAddress)).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount);
+            
+            let channelDetails = await factory.getInfo(channelAddress);
+            assert.strictEqual(new BigNumber(channelDetails[6]).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount);
+            assert.strictEqual(new BigNumber(channelDetails[5]).toNumber(), 1); //status : 1 = Recharged
+            // Recharging with remaining 500 approved tokens
+            await factory.rechargeChannel(channelAddress, new BigNumber(tokenAmount).times(new BigNumber(10).pow(18)), {from: sender}); 
+            assert.strictEqual((await Token.balanceOf(channelAddress)).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount*2);
+            
+            let channelDetails2 = await factory.getInfo(channelAddress);                   
+            assert.strictEqual(new BigNumber(channelDetails2[6]).dividedBy(new BigNumber(10).pow(18)).toNumber(), tokenAmount*2);
+            assert.strictEqual(new BigNumber(channelDetails2[5]).toNumber(), 1); //status : 1 = Recharged
+        });
 
-//     it("rechargeChannel : with zero deposit (should fail)", async()=>{
-//         let Token = await TestToken.new();
-//         let challengePeriod = 500;
-//         let factory = await Factory.new();
-//         let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
-//         let channelAddress = channel.logs[0].args._channelAddress;
-//         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
-//         try{
-//             await factory.rechargeChannel(channelAddress, 0); 
-//         }catch(error){
-//             //console.log(error);
-//             Utils.ensureException(error);
-//         }        
-//     });
+        it("rechargeChannel : with non-contract channel address (should fail)", async()=>{
+            let Token = await TestToken.new({from: sender});
+            let challengePeriod = 500;
+            let factory = await Factory.new({from: sender});
+            let channel = await factory.createChannel(receiver, Token.address, challengePeriod, {from: sender});
+            let channelAddress = channel.logs[0].args._channelAddress;
+            await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)), {from: sender});
+            try{
+                await factory.rechargeChannel(testAddress1, new BigNumber(500).times(new BigNumber(10).pow(18)),{from: sender});      
+            }catch(error){
+                //console.log(error);
+                Utils.ensureException(error);
+            }
+        });
 
-//     it("rechargeChannel : with origin as non-sender address (should fail)", async()=>{
-//         let Token = await TestToken.new();
-//         let challengePeriod = 500;
-//         let factory = await Factory.new();
-//         let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
-//         let channelAddress = channel.logs[0].args._channelAddress;
-//         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
-//         try{
-//             await factory.rechargeChannel(channelAddress, 500, {from: testAddress1}); 
-//         }catch(error){
-//             //console.log(error);
-//             Utils.ensureException(error);
-//         }        
-//     });
+        it("rechargeChannel : with zero deposit (should fail)", async()=>{
+            let Token = await TestToken.new({from: sender});
+            let challengePeriod = 500;
+            let factory = await Factory.new({from: sender});
+            let channel = await factory.createChannel(receiver, Token.address, challengePeriod, {from: sender});
+            let channelAddress = channel.logs[0].args._channelAddress;
+            await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)), {from: sender});
+            try{
+                await factory.rechargeChannel(channelAddress, 0, {from: sender}); 
+            }catch(error){
+                //console.log(error);
+                Utils.ensureException(error);
+            }        
+        });
 
-//     it("rechargeChannel : without approving tokens (should fail)", async()=>{
-//         let Token = await TestToken.new();
-//         let challengePeriod = 500;
-//         let factory = await Factory.new();
-//         let channel = await factory.createChannel(receiver, Token.address, challengePeriod);
-//         let channelAddress = channel.logs[0].args._channelAddress;
-//         try{
-//             await factory.rechargeChannel(channelAddress, new BigNumber(500).times(new BigNumber(10).pow(18))); 
-//         }catch(error){
-//             //console.log(error);
-//             Utils.ensureException(error);
-//         }        
-//     });
-  //  });
+        it("rechargeChannel : with origin as non-sender address (should fail)", async()=>{
+            let Token = await TestToken.new({from: sender});
+            let challengePeriod = 500;
+            let factory = await Factory.new({from: sender});
+            let channel = await factory.createChannel(receiver, Token.address, challengePeriod, {from: sender});
+            let channelAddress = channel.logs[0].args._channelAddress;
+            await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)),{from: sender});
+            try{
+                await factory.rechargeChannel(channelAddress, 500, {from: testAddress1}); 
+            }catch(error){
+                //console.log(error);
+                Utils.ensureException(error);
+            }        
+        });
+
+        it("rechargeChannel : without approving tokens (should fail)", async()=>{
+            let Token = await TestToken.new({from: sender});
+            let challengePeriod = 500;
+            let factory = await Factory.new({from: sender});
+            let channel = await factory.createChannel(receiver, Token.address, challengePeriod, {from: sender});
+            let channelAddress = channel.logs[0].args._channelAddress;
+            try{
+                await factory.rechargeChannel(channelAddress, new BigNumber(500).times(new BigNumber(10).pow(18)),{from: sender}); 
+            }catch(error){
+                //console.log(error);
+                Utils.ensureException(error);
+            }        
+        });
+
+        it("rechargeChannel : more than approved tokens (should fail)", async()=>{
+            let Token = await TestToken.new({from: sender});
+            let challengePeriod = 500;
+            let factory = await Factory.new({from: sender});
+            let channel = await factory.createChannel(receiver, Token.address, challengePeriod, {from: sender});
+            let channelAddress = channel.logs[0].args._channelAddress;
+            await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)),{from: sender});
+            try{
+                await factory.rechargeChannel(channelAddress, new BigNumber(1001).times(new BigNumber(10).pow(18)),{from: sender}); 
+            }catch(error){
+                //console.log(error);
+                Utils.ensureException(error);
+            }        
+        });
+    });
 
 //     it("withdrawFromChannel : tokens will be transferred to receiver account", async()=>{
 //         let Token = await TestToken.new();

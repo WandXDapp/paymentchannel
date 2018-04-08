@@ -215,28 +215,30 @@ contract('Factory', (accounts) => {
             }        
         });
     });
+    // describe("withdrawFromChannel", async() => {
 
-//     it("withdrawFromChannel : tokens will be transferred to receiver account", async()=>{
-//         let Token = await TestToken.new();
-//         let challengePeriod = 400;
-//         let factory = await Factory.new();
-//         let channel = await factory.createChannel(receiver, Token.address, challengePeriod); //sender = accounts[0]
-//         let channelAddress = channel.logs[0].args._channelAddress;
-        
-//         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)));
-//         await factory.rechargeChannel(channelAddress, new BigNumber(500).times(new BigNumber(10).pow(18)));  
-//         assert.strictEqual((await Token.balanceOf(channelAddress)).dividedBy(new BigNumber(10).pow(18)).toNumber(), 500);
-//         let balance = new BigNumber(100).times(new BigNumber(10).pow(18))
-//         let hash = web3.utils.soliditySha3(receiver, balance, channelAddress);
-//         let sig = await web3.eth.sign(hash, accounts[0]);
-//         sig = sig.substr(2, sig.length);
-//         let r = '0x' + sig.substr(0, 64);
-//         let s = '0x' + sig.substr(64, 64);
-//         let v = web3.utils.toDecimal(sig.substr(128, 2)) + 27;
-//         await factory.withdrawFromChannel(channelAddress, balance, v,r,s, {from: receiver});     
-//         assert.strictEqual((await Token.balanceOf(receiver)).dividedBy(new BigNumber(10).pow(18)).toNumber(), 100);
-        
-//     });
+    
+    //     it("withdrawFromChannel : tokens will be transferred to receiver account", async()=>{
+    //         let Token = await TestToken.new({from: sender});
+    //         let challengePeriod = 400;
+    //         let factory = await Factory.new({from: sender});
+    //         let channel = await factory.createChannel(receiver, Token.address, challengePeriod, {from: sender}); 
+    //         let channelAddress = channel.logs[0].args._channelAddress;
+            
+    //         await Token.approve(channelAddress, new BigNumber(1000).times(new BigNumber(10).pow(18)), {from: sender});
+    //         await factory.rechargeChannel(channelAddress, new BigNumber(500).times(new BigNumber(10).pow(18)), {from: sender});  
+    //         assert.strictEqual((await Token.balanceOf(channelAddress)).dividedBy(new BigNumber(10).pow(18)).toNumber(), 500);
+    //         let balance = new BigNumber(100).times(new BigNumber(10).pow(18))
+    //         let hash = web3.utils.soliditySha3(receiver, balance, channelAddress);
+    //         let sig = await web3.eth.sign(hash, sender);
+    //         sig = sig.substr(2, sig.length);
+    //         let r = '0x' + sig.substr(0, 64);
+    //         let s = '0x' + sig.substr(64, 64);
+    //         let v = web3.utils.toDecimal(sig.substr(128, 2)) + 27;
+    //         await factory.withdrawFromChannel(channelAddress, balance, v,r,s, {from: receiver});     
+    //         //assert.strictEqual((await Token.balanceOf(receiver)).dividedBy(new BigNumber(10).pow(18)).toNumber(), 100);
+            
+    //     });
 
 //     it("withdrawFromChannel : withdrawing 100 tokens twice", async()=>{
 //         let Token = await TestToken.new();
@@ -407,6 +409,8 @@ contract('Factory', (accounts) => {
 //             Utils.ensureException(error);
 //         }
 //     });
+
+//});
 
 //     it("channelMutualSettlement : Tokens will be transferred respectively (By Receiver)", async()=>{
 //         let Token = await TestToken.new();

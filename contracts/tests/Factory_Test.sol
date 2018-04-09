@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "./Channel_Test.sol";
 import "./../lib/SafeMath.sol";
 
-contract Factory {
+contract Factory_Test {
 
     /*
      *  Data structures
@@ -64,7 +64,7 @@ contract Factory {
     * @dev `constructor`
     */
 
-    function Factory() public {
+    function Factory_Test() public {
         owner = msg.sender;
     }
 

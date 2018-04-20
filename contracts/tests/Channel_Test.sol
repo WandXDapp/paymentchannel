@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 
 import "./../lib/SafeMath.sol";
@@ -227,7 +227,7 @@ contract Channel {
         require(token.transfer(_receiverAddress, _balance.sub(withdrawnBalance)));
 
         // Send remaining tokens back to sender
-        var remainingTokens = depositedBalance.sub(_balance);
+        uint remainingTokens = depositedBalance.sub(_balance);
         if(remainingTokens > 0)
         {
             require(token.transfer(_senderAddress, remainingTokens));

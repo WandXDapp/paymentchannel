@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "./Channel.sol";
 import "./lib/SafeMath.sol";
@@ -85,7 +85,7 @@ contract Factory {
         channelsAsSender[sender].push(channel);
         channelsAsReceiver[_receiver].push(channel);
         channelUsers[channel] = User(sender, _receiver);
-        ChannelCreated(sender, _receiver, channel);
+        emit ChannelCreated(sender, _receiver, channel);
     }
     
     /**
@@ -100,7 +100,7 @@ contract Factory {
         channel = Channel(_channelAddress);
         require(channel.recharge(_deposit));
 
-        ChannelRecharged(msg.sender, _deposit);
+        emit ChannelRecharged(msg.sender, _deposit);
     }
 
     /**
@@ -118,7 +118,7 @@ contract Factory {
         channel = Channel(_channelAddress);
         require(channel.withdraw(_balance, _v, _r, _s));
 
-        ChannelWithdraw(msg.sender, _balance);
+        emit ChannelWithdraw(msg.sender, _balance);
     }
 
     /**
@@ -139,7 +139,7 @@ contract Factory {
         channel = Channel(_channelAddress);
         require(channel.mutualSettlement(_balance, _vbal, _rbal, _sbal, _vclose, _rclose, _sclose));
 
-        ChannelSettled(msg.sender, _balance);
+        emit ChannelSettled(msg.sender, _balance);
     }
 
     /**
@@ -154,7 +154,7 @@ contract Factory {
         channel = Channel(_channelAddress);
         require(channel.challengedSettlement(_balance));
 
-        ChannelChallenged(msg.sender, _balance);
+        emit ChannelChallenged(msg.sender, _balance);
     }
 
     /**
@@ -166,9 +166,9 @@ contract Factory {
     isSender(_channelAddress, msg.sender)
     {
         channel = Channel(_channelAddress);
-        var balance = channel.afterChallengeSettle();
+        uint balance = channel.afterChallengeSettle();
 
-        ChannelSettled(msg.sender, balance);
+        emit ChannelSettled(msg.sender, balance);
     }
 
     /**

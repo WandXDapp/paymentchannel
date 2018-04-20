@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "../lib/SafeMath.sol";
 
@@ -30,7 +30,7 @@ contract BasicToken is ERC20 {
         if (balances[msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
             balances[msg.sender] = balances[msg.sender].sub(_value);
             balances[_to] = balances[_to].add(_value);
-            Transfer(msg.sender, _to, _value);
+            emit Transfer(msg.sender, _to, _value);
             return true;
         }else {
             return false;
@@ -51,7 +51,7 @@ contract BasicToken is ERC20 {
             allowed[_from][msg.sender] = _allowance.sub(_value);
             balances[_to] = balances[_to].add(_value);
             balances[_from] = balances[_from].sub(_value);
-            Transfer(_from, _to, _value);
+            emit Transfer(_from, _to, _value);
             return true;
       } else {
             return false;
@@ -78,7 +78,7 @@ contract BasicToken is ERC20 {
         require((_value == 0) || (allowed[msg.sender][_spender] == 0));
 
         allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 

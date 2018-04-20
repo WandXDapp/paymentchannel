@@ -18,7 +18,7 @@
     "ethers": "^2.2.6",
     "ethjs-util": "^0.1.4",
     "left-pad": "^1.2.0",
-    "solc": "0.4.19",
+    "solc": "^0.4.21",
     "truffle": "4.0.1",
     "truffle-hdwallet-provider": "0.0.3",
     "web3": "^1.0.0-beta.33"
@@ -50,6 +50,6 @@
   "homepage": "https://github.com/WandXDapp/paymentchannel#readme",
   "devDependencies": {
     "sol-merger": "^0.1.2",
-    "solidity-coverage": "^0.4.11"
+    "solidity-coverage": "^0.5.0"
   }
 }
